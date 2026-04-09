@@ -2,10 +2,11 @@
 
 Local-first salary prediction app with a Decision Tree model, FastAPI `GET /predict`, a separate Python client, a story-first Streamlit dashboard, local Ollama analysis, and optional Supabase persistence.
 
-## Live URLs
+## Current Run Mode
 
-- Streamlit dashboard: `ADD_STREAMLIT_URL_HERE`
-- FastAPI service: `ADD_RENDER_API_URL_HERE`
+- Dashboard: local Streamlit app
+- API: local FastAPI service
+- Deployment: intentionally skipped for this assignment version
 
 ## Architecture
 
@@ -80,6 +81,12 @@ streamlit run dashboard.py --server.address 127.0.0.1 --server.port 8501
 ```bash
 python predict_client.py --experience-level SE --employment-type FT --job-title "Data Scientist" --employee-residence US --company-location US --company-size M --remote-ratio 100
 ```
+
+Local URLs after startup:
+
+- Dashboard: `http://127.0.0.1:8501`
+- API docs: `http://127.0.0.1:8000/docs`
+- API health: `http://127.0.0.1:8000/health`
 
 ## Environment Variables
 
@@ -192,23 +199,13 @@ What each key is used for:
 - `SUPABASE_URL`: shared base URL for both paths
 - `SUPABASE_PREDICTIONS_TABLE`: current table name
 
-## Deployment
+## Final Non-Deployment Checklist
 
-### Streamlit Community Cloud
-
-- App entrypoint: `dashboard.py`
-- Use `requirements.txt`
-- Set `FASTAPI_BASE_URL` to your deployed Render API URL
-- Set Ollama env vars only if you have a reachable Ollama service
-- If Ollama is not configured in cloud, the dashboard fails gracefully
-
-### Render
-
-- Deployment config: `render.yaml`
-- API entrypoint: `api.py`
-- Health path: `/health`
-- Keep `artifacts/decision_tree_pipeline.joblib` available in the deployed repo
-- Ensure the DS Salaries CSV is present at `data/raw/ds_salaries.csv`
+- Train the model and confirm the artifact and metrics exist.
+- Start FastAPI and Streamlit locally.
+- Run one prediction from the dashboard and one from `predict_client.py`.
+- If you want history, run `supabase_schema.sql`, set the Supabase env vars, and confirm one saved prediction appears in the dashboard history section.
+- Take screenshots of the hero section, Prediction Studio, and Why This Prediction Makes Sense section before submission.
 
 ## Tech Stack
 
@@ -224,11 +221,11 @@ What each key is used for:
 - python-dotenv
 - pytest
 
-## Screenshots
+## Suggested Screenshots
 
-- `ADD_DASHBOARD_HERO_SCREENSHOT_HERE`
-- `ADD_PREDICTION_STUDIO_SCREENSHOT_HERE`
-- `ADD_WHY_THIS_PREDICTION_MAKES_SENSE_SCREENSHOT_HERE`
+- Hero section with KPI cards
+- Prediction Studio with a completed prediction
+- Why This Prediction Makes Sense with peer comparison and AI insight
 
 ## Testing
 
