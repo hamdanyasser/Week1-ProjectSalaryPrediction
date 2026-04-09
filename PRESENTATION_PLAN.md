@@ -1,83 +1,168 @@
 # PayScope — 10-Minute Presentation Plan
 
-## Slide 1: Title (30 seconds)
-- **PayScope: Predict Data-Science Salaries with ML + LLM**
-- Your name, Week 1 assignment, AI Engineering Program
-- One-liner: "Train a model, serve it through an API, explain it with a local LLM, and present it in a dashboard."
+> Structure: **2 min intro — 6 min body — 2 min conclusion**
+> Audience: mix of hypothetical clients and technical experts.
+> Rules: no reading from slides, conversational tone, keywords-only slides, live demo.
 
-## Slide 2: Problem & Dataset (1 minute)
-- Kaggle DS Salaries dataset — ~600 real-world records
-- Features: experience level, employment type, job title, location, company size, remote ratio
-- Target: salary in USD
-- Why it matters: salary transparency helps candidates and hiring managers
+---
 
-## Slide 3: Architecture Diagram (1.5 minutes)
-- Draw or show the flow:
+## INTRODUCTION (2 minutes)
+
+### Talking points (do NOT read these — use them as cues)
+
+1. **Greet + introduce yourself**
+   - "Good morning everyone, my name is Yasser Hamdan and today I'll be presenting PayScope, my Week 1 project for the AI Engineering Program."
+
+2. **The problem**
+   - "If you're a data professional looking for a new role, one of the hardest questions is: what should I expect to earn? Salary data is scattered, inconsistent, and hard to interpret."
+   - "PayScope solves that. You enter your profile — role, experience, location, company size — and it predicts your salary, explains why, and tells you how you compare to your peers."
+
+3. **Who is it for**
+   - Job seekers in data science and analytics
+   - Hiring managers benchmarking compensation
+
+4. **Roadmap**
+   - "I'll walk you through how it works, show a live demo, discuss the key decisions I made, and wrap up with what I'd improve next."
+
+### Slide: Title slide
+- Project name, your name, one-liner: "Predict, explain, and compare data-science salaries"
+
+---
+
+## BODY (6 minutes)
+
+### Part 1: How It Works — Architecture (1.5 min)
+
+**Talking points:**
+- "Let me start with the big picture. The system has four layers."
+- Show the architecture diagram:
   ```
-  CSV → ml.py (clean + train) → Decision Tree artifact
-  artifact → FastAPI /predict → Ollama LLM → Supabase → Streamlit dashboard
+  Training data (CSV) → ML pipeline → API → Database → Dashboard
   ```
-- Emphasize the **local pipeline**: API does prediction + LLM analysis + persistence in one call
-- Dashboard **consumes from Supabase** (prediction history) and **API** (live predictions)
-- Mention: Railway hosts the API, Streamlit Cloud hosts the dashboard
+- **Data**: Kaggle DS Salaries dataset, ~600 real salary records, 7 features
+- **Model**: Decision Tree trained with scikit-learn, saved as a reusable artifact
+- **API**: FastAPI serves predictions as a GET endpoint — the API also calls a local LLM (Ollama) for plain-English analysis and writes everything to Supabase
+- **Dashboard**: Streamlit reads from the API and Supabase, presents charts and predictions
+- **For clients**: "One click gives you a salary estimate with a full explanation."
+- **For tech experts**: "The pipeline runs locally: predict → LLM → persist → serve. The dashboard only consumes."
 
-## Slide 4: Model Choice & Training (1.5 minutes)
-- **Decision Tree** with sklearn Pipeline (OneHotEncoder + DecisionTreeRegressor)
-- Why Decision Tree: interpretable, handles categorical features well, fast training
+### Slide: Architecture diagram (visual, no bullet walls)
+
+---
+
+### Part 2: The Model (1 min)
+
+**Talking points:**
+- "I chose a Decision Tree because it's interpretable — I can explain every prediction — and it handles mixed data types well."
+- scikit-learn Pipeline: OneHotEncoder for categorical features + DecisionTreeRegressor
 - Hyperparameters: max_depth=12, min_samples_leaf=4
-- Show the training metrics (R², MAE) from `model_metrics.json`
-- Mention: `train_model.py` saves the pipeline as a joblib artifact
+- Training metrics: R² and MAE (show from model_metrics.json)
+- "In simple terms, the model learns salary patterns from 600 real records and applies those patterns to new inputs."
 
-## Slide 5: Live Demo — Dashboard (2.5 minutes)
-- **Open the live dashboard** (Streamlit Cloud URL)
-- Walk through each section:
-  1. **Hero + KPI cards** — total records, median salary, top role, model accuracy
-  2. **Market Overview charts** — salary distribution, experience breakdown, top roles, remote work
-  3. **Prediction Studio** — fill in the form, click Predict, show the result card
-  4. **Why This Prediction** — peer comparison bar chart, driver messages, explanation
-  5. **AI Insight card** — LLM headline + narrative + insights (explain this came from Ollama via the API)
-  6. **Prediction History** — rows read from Supabase
-  7. **Takeaways** — auto-generated bullet points from the data
-- Tip: have a prediction already saved so History is not empty
+### Slide: Model pipeline visual + key metrics
 
-## Slide 6: API & Client Script (1 minute)
-- Show `GET /predict` in the Swagger docs (Railway URL `/docs`)
-- Show the query parameters and response shape
-- Show `predict_client.py` running in a terminal: prediction + peer context + LLM analysis
-- Mention error handling: timeout, connection error, HTTP error, invalid JSON
+---
 
-## Slide 7: Supabase Integration (1 minute)
-- Schema: `salary_predictions` table with prediction inputs, outputs, peer context, LLM columns
-- Row-level security: public read (anon key), service-role insert only
-- API writes on every prediction; dashboard reads for History section
-- Show the Supabase table editor with real rows as proof
+### Part 3: Live Demo (2.5 min)
 
-## Slide 8: Key Decisions & Tradeoffs (30 seconds)
-- LLM in API (not dashboard) — keeps the pipeline local, writes once, dashboard just reads
-- Static data stays in CSV — no reason to put 600 unchanging rows in Supabase
-- Graceful degradation — if Ollama or Supabase is down, everything still works
-- Dark theme — designed for a non-technical audience (clean, minimal, storytelling-first)
+> This is the most important part. Narrate everything you do.
 
-## Slide 9: Q&A (30 seconds)
-- Open for questions
-- Be ready to explain: why Decision Tree over Random Forest, how peer matching works, how the LLM prompt is structured
+**Talking points:**
+- "Let me show you PayScope in action."
+- **Open the live dashboard** (have it ready in a browser tab)
+
+Walk through:
+1. **KPI cards at the top** — "You'll notice four cards: total records, median salary, highest-paying role, and model accuracy. This gives immediate context."
+2. **Market charts** — "These charts show salary distribution, how experience affects pay, top-paying roles, and remote vs. on-site trends. All from real data."
+3. **Prediction Studio** — Fill in the form live: Senior, Full-time, Data Scientist, US, M, Remote.
+   - "Let me walk you through a prediction."
+   - Click Predict. Show the result card.
+   - "The model predicts $167K for this profile."
+4. **Peer comparison** — "Below the prediction, you see how this compares to 43 similar professionals in the dataset — the peer median, range, and what's driving the number."
+5. **AI Insight** — "This narrative was generated by a local LLM. The API sent the prediction context to Ollama, got back a plain-English summary, and stored it in the database."
+6. **Prediction History** — "Every prediction is saved to Supabase. The dashboard reads it back here so you can track past queries."
+
+### Slide: None — this is a live screen share of the dashboard
+
+---
+
+### Part 4: API & Client Script (30 sec)
+
+**Talking points:**
+- Briefly show the Swagger docs at `/docs` (have it open in a tab)
+- "The API has two endpoints: a health check and the prediction endpoint. All parameters are validated."
+- "I also built a standalone Python client that calls this API from the command line with full error handling."
+
+### Slide: Screenshot of Swagger UI or terminal output
+
+---
+
+### Part 5: Key Decisions & Challenges (30 sec)
+
+**Talking points:**
+- "One challenge I faced was where to put the LLM. I moved it into the API so the pipeline stays local: predict, analyze, persist — all in one call. The dashboard just reads."
+- "I kept the training data in a CSV rather than Supabase because it's static — there's no benefit to querying 600 unchanging rows through a database."
+- "Everything degrades gracefully. If the LLM or database is unavailable, the app still works."
+
+### Slide: 3 bullet points — decisions, not explanations
+
+---
+
+## CONCLUSION (2 minutes)
+
+### Part 6: Summary + What's Next (1.5 min)
+
+**Talking points:**
+- "To summarize: PayScope takes your professional profile, predicts your salary using a trained model, explains the result with peer data and an AI narrative, and persists everything for future reference."
+- **Value**: "For a job seeker, this is a one-stop answer to 'what should I expect to earn.' For a hiring manager, it's a quick market benchmark."
+- **What still needs work**:
+  - The model could be improved with more data or a different algorithm (Random Forest, Gradient Boosting)
+  - The dataset is from Kaggle and may not reflect current market conditions
+  - UI could add filtering and comparison features
+- **Next steps**:
+  - Experiment with ensemble models
+  - Add user accounts and saved profiles
+  - Integrate a live salary data source
+
+### Part 7: Thank + Q&A (30 sec)
+
+- "Thank you for your attention. I'm happy to take a couple of quick questions."
+- Smile, pause, wait for questions.
+
+### Slide: "Thank you" + your name + live URL
 
 ---
 
 ## Preparation Checklist
 
-- [ ] Open the live dashboard URL in a browser tab before presenting
-- [ ] Open the API docs URL (`/docs`) in another tab
-- [ ] Have a terminal ready with `python predict_client.py` command prepared
-- [ ] Run at least one prediction beforehand so Supabase History has data
-- [ ] Open Supabase table editor in a tab to show real rows
-- [ ] If demoing locally: start Ollama, FastAPI, and Streamlit before the presentation
-- [ ] Test the live URLs 10 minutes before — Railway free tier can cold-start
+- [ ] Test your internet, webcam, microphone, and lighting
+- [ ] Camera framing: face centered, shoulders visible, neutral background
+- [ ] Practice with a timer — aim for 9 minutes in rehearsal
+- [ ] Have these browser tabs ready (in order):
+  1. Dashboard (Streamlit Cloud URL)
+  2. API docs (`/docs` on Railway URL)
+  3. Supabase table editor
+- [ ] Run at least one prediction before presenting so History has data
+- [ ] If demoing locally: start Ollama, FastAPI, and Streamlit beforehand
+- [ ] Hit the Railway URL 5 minutes before — free tier can cold-start
+- [ ] Practice screen sharing transitions (dashboard → Swagger → back)
+- [ ] Prepare talking points on index cards or sticky notes — do NOT read a script
 
-## Key Numbers to Mention
-- ~600 training records
-- 7 features → 1 target (salary_in_usd)
-- Decision Tree with max_depth=12
-- 4 passing tests
+## Key Numbers to Mention Naturally
+
+- ~600 real salary records from Kaggle
+- 7 input features → 1 target (salary in USD)
+- Decision Tree, max_depth=12
+- 4 automated tests passing
 - 2 API endpoints (GET /health, GET /predict)
-- Full deploy: Railway (API) + Streamlit Cloud (dashboard) + Supabase (persistence)
+- Deployed: Railway (API) + Streamlit Cloud (dashboard) + Supabase (database)
+
+## Likely Questions and Short Answers
+
+| Question | Answer |
+|----------|--------|
+| Why Decision Tree over Random Forest? | Interpretability — I can explain every split. For a demo project, clarity matters more than squeezing out extra accuracy. |
+| How does peer matching work? | The system finds records with the same role + experience + employment type + company size, then falls back to broader groups if the match is too small. |
+| What if Ollama is offline? | The API returns the prediction without LLM analysis, and the dashboard shows a graceful message instead. Nothing breaks. |
+| Is the data up to date? | It's the Kaggle DS Salaries dataset — a snapshot, not a live feed. A next step would be integrating a real-time source. |
+| How do you handle unseen job titles? | The OneHotEncoder is set to handle_unknown="ignore", so new titles get zero-encoded and the model still predicts based on other features. |
