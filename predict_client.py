@@ -63,6 +63,11 @@ def main() -> int:
     print(f"Peer group: {peer_context['match_label']}")
     print(f"Sample size: {peer_context['sample_size']}")
     print(peer_context["comparison_text"])
+
+    llm_analysis = payload.get("llm_analysis")
+    if llm_analysis:
+        print(f"\nAI Analysis: {llm_analysis['headline']}")
+        print(llm_analysis["narrative"])
     return 0
 
 

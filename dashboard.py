@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import pandas as pd
@@ -53,9 +52,6 @@ CHART_MARGIN = {"l": 40, "r": 20, "t": 30, "b": 40}
 SESSION_DEFAULTS = {
     "prediction_payload": None,
     "prediction_error": None,
-    "llm_payload": None,
-    "llm_chart_data": None,
-    "llm_error": None,
 }
 
 
@@ -407,97 +403,6 @@ def build_llm_chart_data(prediction_payload: dict[str, Any], df: pd.DataFrame) -
     }
 
 
-def extract_json_object(raw_text: str) -> dict[str, Any] | None:
-    start_index = raw_text.find("{")
-    end_index = raw_text.rfind("}")
-    if start_index == -1 or end_index == -1 or end_index <= start_index:
-        return None
-
-    candidate = raw_text[start_index : end_index + 1]
-    try:
-        parsed = json.loads(candidate)
-    except json.JSONDecodeError:
-        return None
-    return parsed if isinstance(parsed, dict) else None
-
-
-def generate_llm_analysis(
-    prediction_payload: dict[str, Any],
-    df: pd.DataFrame,
-) -> tuple[dict[str, Any] | None, dict[str, Any], str | None]:
-    settings = get_settings()
-    chart_data = build_llm_chart_data(prediction_payload, df)
-
-    if not settings.ollama_enabled:
-        return None, chart_data, None
-
-    peer = prediction_payload["peer_context"]
-    predicted_salary = float(prediction_payload["predicted_salary_usd"])
-    median_salary = float(df[TARGET_COLUMN].median())
-    experience_summary = get_experience_salary_summary(df)
-    top_roles = get_top_roles_by_salary(df, top_n=1)
-
-    market_summary = {
-        "records": int(len(df)),
-        "median_salary_usd": round(median_salary, 2),
-        "top_experience_level": experience_summary.iloc[0]["experience_label"],
-        "top_role": top_roles.iloc[0]["job_title"] if not top_roles.empty else "Needs verification",
-    }
-
-    prompt = (
-        "You are helping present a salary prediction to a non-technical audience. "
-        "Return valid JSON only with this exact shape:\n"
-        '{'
-        '"headline": "short title", '
-        '"narrative": "2 to 3 short sentences in plain English", '
-        '"insights": ["short point", "short point"]'
-        '}\n\n'
-        f"Predicted salary: ${predicted_salary:,.0f}\n"
-        f"Peer group label: {peer['match_label']}\n"
-        f"Peer group sample size: {peer['sample_size']}\n"
-        f"Peer group median salary: ${peer['peer_median_salary_usd']:,.0f}\n"
-        f"Peer group range: ${peer['peer_min_salary_usd']:,.0f} to ${peer['peer_max_salary_usd']:,.0f}\n"
-        f"Comparison: {peer['comparison_text']}\n"
-        f"Market records: {market_summary['records']}\n"
-        f"Market median salary: ${market_summary['median_salary_usd']:,.0f}\n"
-        f"Top-paying experience level: {market_summary['top_experience_level']}\n"
-        f"Top role by median salary: {market_summary['top_role']}\n"
-        "Keep the response simple, concrete, and presentation-ready. Avoid jargon."
-    )
-
-    try:
-        response = requests.post(
-            f"{settings.ollama_base_url.rstrip('/')}/api/generate",
-            json={"model": settings.ollama_model, "prompt": prompt, "stream": False},
-            timeout=settings.ollama_timeout_seconds,
-        )
-        response.raise_for_status()
-        raw_text = response.json().get("response", "").strip()
-    except requests.RequestException:
-        return None, chart_data, "Ollama is configured but not reachable right now."
-    except ValueError:
-        return None, chart_data, "Ollama returned an unreadable response."
-
-    parsed_payload = extract_json_object(raw_text)
-    if parsed_payload:
-        headline = str(parsed_payload.get("headline", "AI salary summary")).strip() or "AI salary summary"
-        narrative = str(parsed_payload.get("narrative", "")).strip() or raw_text
-        insights = parsed_payload.get("insights", [])
-        if not isinstance(insights, list):
-            insights = []
-        clean_insights = [str(item).strip() for item in insights if str(item).strip()][:2]
-        return {
-            "headline": headline,
-            "narrative": narrative,
-            "insights": clean_insights,
-        }, chart_data, None
-
-    return {
-        "headline": "AI salary summary",
-        "narrative": raw_text,
-        "insights": [],
-    }, chart_data, None
-
 
 def load_supabase_history(limit: int = 20) -> tuple[pd.DataFrame | None, str | None]:
     settings = get_settings()
@@ -542,32 +447,27 @@ def render_driver_card(driver_messages: list[str]) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-def render_ai_card(settings: Any, llm_payload: dict[str, Any] | None, llm_error: str | None) -> None:
-    if llm_payload:
+def render_ai_card(llm_analysis: dict[str, Any] | None) -> None:
+    if llm_analysis:
+        model_label = llm_analysis.get("model") or "Local LLM"
         insights_html = ""
-        if llm_payload.get("insights"):
-            bullets = "".join(f"<li>{item}</li>" for item in llm_payload["insights"])
+        if llm_analysis.get("insights"):
+            bullets = "".join(f"<li>{item}</li>" for item in llm_analysis["insights"])
             insights_html = f"<ul class='ai-list'>{bullets}</ul>"
 
         st.markdown(
             f"""
             <div class="ai-card">
-                <div class="ai-badge"><span class="ai-dot"></span>AI Insight | {settings.ollama_model}</div>
-                <div class="ai-headline">{llm_payload['headline']}</div>
-                <div class="ai-text">{llm_payload['narrative']}</div>
+                <div class="ai-badge"><span class="ai-dot"></span>AI Insight | {model_label}</div>
+                <div class="ai-headline">{llm_analysis['headline']}</div>
+                <div class="ai-text">{llm_analysis['narrative']}</div>
                 {insights_html}
             </div>
             """,
             unsafe_allow_html=True,
         )
-        return
-
-    if llm_error:
-        st.info(llm_error)
-    elif not settings.ollama_enabled:
-        st.info("AI insight is off. Set OLLAMA_BASE_URL and OLLAMA_MODEL in .env to enable the local LLM.")
     else:
-        st.info("Run a prediction to generate an AI explanation.")
+        st.info("AI narrative is generated when predictions run through the local pipeline with Ollama enabled.")
 
 
 def main() -> None:
@@ -830,16 +730,9 @@ def main() -> None:
         if error_message:
             st.session_state["prediction_payload"] = None
             st.session_state["prediction_error"] = error_message
-            st.session_state["llm_payload"] = None
-            st.session_state["llm_chart_data"] = None
-            st.session_state["llm_error"] = None
         else:
-            llm_payload, llm_chart_data, llm_error = generate_llm_analysis(prediction_payload, df)
             st.session_state["prediction_payload"] = prediction_payload
             st.session_state["prediction_error"] = None
-            st.session_state["llm_payload"] = llm_payload
-            st.session_state["llm_chart_data"] = llm_chart_data
-            st.session_state["llm_error"] = llm_error
 
     with right_column:
         prediction_payload = st.session_state["prediction_payload"]
@@ -896,35 +789,34 @@ def main() -> None:
             render_driver_card(peer_context["driver_messages"])
 
         with detail_columns[1]:
-            llm_chart_data = st.session_state["llm_chart_data"]
-            if llm_chart_data:
-                render_chart_card(
-                    "How the estimate compares",
-                    "This chart compares the prediction against the peer group median and the broader market median.",
+            chart_data = build_llm_chart_data(prediction_payload, df)
+            render_chart_card(
+                "How the estimate compares",
+                "This chart compares the prediction against the peer group median and the broader market median.",
+            )
+            comparison_fig = go.Figure(
+                go.Bar(
+                    x=chart_data["values"],
+                    y=chart_data["labels"],
+                    orientation="h",
+                    marker_color=[PRIMARY, ACCENT, ACCENT_SOFT],
+                    text=[f"${value:,.0f}" for value in chart_data["values"]],
+                    textposition="auto",
                 )
-                comparison_fig = go.Figure(
-                    go.Bar(
-                        x=llm_chart_data["values"],
-                        y=llm_chart_data["labels"],
-                        orientation="h",
-                        marker_color=[PRIMARY, ACCENT, ACCENT_SOFT],
-                        text=[f"${value:,.0f}" for value in llm_chart_data["values"]],
-                        textposition="auto",
-                    )
-                )
-                comparison_fig.update_layout(xaxis_title="Salary (USD)", yaxis_title="", height=260)
-                st.plotly_chart(
-                    apply_chart_style(comparison_fig),
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                )
-                st.markdown(
-                    "<div class='chart-caption'>This is the supporting AI comparison chart: one clear view of the estimate against peer and market benchmarks.</div>",
-                    unsafe_allow_html=True,
-                )
-                close_chart_card()
+            )
+            comparison_fig.update_layout(xaxis_title="Salary (USD)", yaxis_title="", height=260)
+            st.plotly_chart(
+                apply_chart_style(comparison_fig),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
+            st.markdown(
+                "<div class='chart-caption'>One clear view of the estimate against peer and market benchmarks.</div>",
+                unsafe_allow_html=True,
+            )
+            close_chart_card()
 
-            render_ai_card(settings, st.session_state["llm_payload"], st.session_state["llm_error"])
+            render_ai_card(prediction_payload.get("llm_analysis"))
     else:
         st.info("Run a prediction first, then this section will explain the result in plain English.")
 

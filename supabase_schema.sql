@@ -17,7 +17,10 @@ create table if not exists public.salary_predictions (
     peer_min_salary_usd numeric(12, 2) not null,
     peer_max_salary_usd numeric(12, 2) not null,
     comparison_text text not null,
-    explanation_summary text not null
+    explanation_summary text not null,
+    llm_headline text,
+    llm_narrative text,
+    llm_insights text
 );
 
 create index if not exists idx_salary_predictions_created_at
