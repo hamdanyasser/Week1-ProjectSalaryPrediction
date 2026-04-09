@@ -51,9 +51,9 @@ Railway (FastAPI)  <--  Streamlit Community Cloud (dashboard)
 
 | Service | URL |
 |---------|-----|
-| Dashboard | _Streamlit Community Cloud URL here_ |
-| API | _Render URL here_ |
-| API Docs | _Render URL here_ `/docs` |
+| Dashboard | https://week1-projectsalaryprediction-yvatd83p7jyt97qqowjo3j.streamlit.app |
+| API | https://web-production-3f161.up.railway.app |
+| API Docs | https://web-production-3f161.up.railway.app/docs |
 
 ---
 
