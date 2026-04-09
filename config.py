@@ -12,6 +12,17 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 
 
+def _load_streamlit_secrets() -> None:
+    """On Streamlit Cloud, secrets live in st.secrets, not env vars. Sync them."""
+    try:
+        from streamlit import secrets
+        for key, value in secrets.items():
+            if isinstance(value, str) and key not in os.environ:
+                os.environ[key] = value
+    except Exception:
+        pass
+
+
 @dataclass(frozen=True)
 class Settings:
     base_dir: Path
@@ -73,6 +84,7 @@ def _get_optional(name: str) -> Optional[str]:
 def load_settings(base_dir: Path | None = None) -> Settings:
     resolved_base_dir = (base_dir or BASE_DIR).resolve()
     load_dotenv(resolved_base_dir / ".env", override=False)
+    _load_streamlit_secrets()
     fastapi_host = os.getenv("FASTAPI_HOST", "127.0.0.1")
     fastapi_port = _get_int("FASTAPI_PORT", 8000)
 
