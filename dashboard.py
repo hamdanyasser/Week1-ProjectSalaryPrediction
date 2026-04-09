@@ -32,22 +32,28 @@ from ml import (
 )
 
 
-BG = "#08111F"
-SURFACE = "#101C2F"
-SURFACE_ALT = "#14243B"
-PRIMARY = "#14B8A6"
-PRIMARY_DIM = "#0F766E"
-ACCENT = "#38BDF8"
-ACCENT_SOFT = "#818CF8"
-TEXT = "#E5EEF8"
-MUTED = "#93A4B8"
-BORDER = "rgba(148, 163, 184, 0.12)"
-SUCCESS_BG = "rgba(20, 184, 166, 0.12)"
-AI_BG = "linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(56, 189, 248, 0.10))"
+# ── colour system ────────────────────────────────────────────────────────
+BG          = "#0A0E1A"
+SURFACE     = "#12172B"
+SURFACE_ALT = "#191F38"
+CARD_GLASS  = "rgba(22, 28, 56, 0.65)"
 
-CHART_COLORS = [PRIMARY, ACCENT, ACCENT_SOFT, "#F59E0B", "#F97316", "#A3E635"]
-CHART_FONT = {"family": "Segoe UI, Arial, sans-serif", "color": TEXT, "size": 13}
-CHART_MARGIN = {"l": 40, "r": 20, "t": 30, "b": 40}
+TEAL        = "#00E5C3"
+TEAL_DIM    = "#00B89C"
+CORAL       = "#FF6B6B"
+AMBER       = "#FFB547"
+VIOLET      = "#A78BFA"
+SKY         = "#38BDF8"
+LIME        = "#84CC16"
+PINK        = "#F472B6"
+
+TEXT        = "#EDF2F7"
+MUTED       = "#8B95A8"
+BORDER      = "rgba(255,255,255,0.06)"
+
+CHART_PALETTE = [TEAL, CORAL, AMBER, VIOLET, SKY, LIME, PINK]
+CHART_FONT    = {"family": "'Inter', 'Segoe UI', system-ui, sans-serif", "color": TEXT, "size": 13}
+CHART_MARGIN  = {"l": 48, "r": 24, "t": 36, "b": 44}
 
 SESSION_DEFAULTS = {
     "prediction_payload": None,
@@ -55,262 +61,475 @@ SESSION_DEFAULTS = {
 }
 
 
-st.set_page_config(page_title="PayScope", layout="wide")
+st.set_page_config(page_title="PayScope", layout="wide", page_icon="$")
 
 
 def inject_css() -> None:
     st.markdown(
         f"""
         <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap');
+
+            :root {{
+                --teal: {TEAL};
+                --coral: {CORAL};
+                --amber: {AMBER};
+                --violet: {VIOLET};
+            }}
+
             .stApp {{
                 background:
-                    radial-gradient(circle at top left, rgba(20,184,166,0.10), transparent 28%),
-                    radial-gradient(circle at top right, rgba(56,189,248,0.08), transparent 24%),
+                    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(0,229,195,0.07), transparent),
+                    radial-gradient(ellipse 70% 50% at 90% 10%, rgba(255,107,107,0.05), transparent),
+                    radial-gradient(ellipse 60% 40% at 50% 90%, rgba(167,139,250,0.05), transparent),
                     {BG};
                 color: {TEXT};
+                font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
             }}
             .block-container {{
-                max-width: 1200px;
-                padding-top: 2rem;
+                max-width: 1220px;
+                padding-top: 1.5rem;
                 padding-bottom: 4rem;
             }}
+
+            /* ── hero ─────────────────────────────────────────────── */
             .hero {{
-                background: linear-gradient(135deg, #08111F 0%, #10314C 55%, #08111F 100%);
-                border: 1px solid rgba(20,184,166,0.18);
-                border-radius: 24px;
-                padding: 2.5rem 2.5rem 2rem;
-                box-shadow: 0 24px 60px rgba(0,0,0,0.30);
-                margin-bottom: 2rem;
+                position: relative;
+                background: linear-gradient(135deg, #0D1127 0%, #141B3D 40%, #1A1040 70%, #0D1127 100%);
+                border: 1px solid rgba(0,229,195,0.12);
+                border-radius: 28px;
+                padding: 3rem 2.8rem 2.5rem;
+                margin-bottom: 2.2rem;
+                overflow: hidden;
             }}
-            .hero-badge {{
-                display: inline-block;
-                background: rgba(20,184,166,0.14);
-                color: {PRIMARY};
-                border: 1px solid rgba(20,184,166,0.22);
+            .hero::before {{
+                content: '';
+                position: absolute;
+                top: -40%;
+                right: -10%;
+                width: 420px;
+                height: 420px;
+                background: radial-gradient(circle, rgba(0,229,195,0.12), transparent 70%);
+                border-radius: 50%;
+                pointer-events: none;
+            }}
+            .hero::after {{
+                content: '';
+                position: absolute;
+                bottom: -30%;
+                left: 15%;
+                width: 300px;
+                height: 300px;
+                background: radial-gradient(circle, rgba(255,107,107,0.08), transparent 70%);
+                border-radius: 50%;
+                pointer-events: none;
+            }}
+            .hero-tag {{
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgba(0,229,195,0.10);
+                color: {TEAL};
+                border: 1px solid rgba(0,229,195,0.20);
                 border-radius: 999px;
-                padding: 0.35rem 0.85rem;
-                font-size: 0.76rem;
+                padding: 0.38rem 1rem;
+                font-size: 0.72rem;
                 font-weight: 700;
-                letter-spacing: 0.08em;
+                letter-spacing: 0.12em;
                 text-transform: uppercase;
-                margin-bottom: 1rem;
+                margin-bottom: 1.2rem;
+                position: relative;
+            }}
+            .hero-tag .dot {{
+                width: 7px; height: 7px;
+                border-radius: 50%;
+                background: {TEAL};
+                animation: pulse-dot 2s ease-in-out infinite;
+            }}
+            @keyframes pulse-dot {{
+                0%, 100% {{ opacity: 1; }}
+                50% {{ opacity: 0.3; }}
             }}
             .hero h1 {{
-                color: #F8FBFF;
-                font-size: 2.45rem;
-                font-weight: 800;
-                line-height: 1.15;
-                margin-bottom: 0.55rem;
+                color: #FFFFFF;
+                font-size: 2.6rem;
+                font-weight: 900;
+                line-height: 1.12;
+                margin-bottom: 0.6rem;
+                letter-spacing: -0.02em;
+                position: relative;
+            }}
+            .hero h1 .highlight {{
+                background: linear-gradient(135deg, {TEAL}, {SKY});
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
             }}
             .hero p {{
                 color: {MUTED};
-                font-size: 1.02rem;
-                line-height: 1.7;
-                max-width: 720px;
+                font-size: 1.05rem;
+                line-height: 1.75;
+                max-width: 660px;
                 margin: 0;
+                position: relative;
             }}
-            .eyebrow {{
-                color: {PRIMARY};
-                font-size: 0.78rem;
+
+            /* ── section headers ──────────────────────────────────── */
+            .section-tag {{
+                display: inline-block;
+                font-size: 0.7rem;
                 font-weight: 700;
-                letter-spacing: 0.10em;
+                letter-spacing: 0.13em;
                 text-transform: uppercase;
-                margin-bottom: 0.35rem;
+                padding: 0.3rem 0.75rem;
+                border-radius: 6px;
+                margin-bottom: 0.5rem;
             }}
+            .section-tag.teal   {{ background: rgba(0,229,195,0.10); color: {TEAL}; }}
+            .section-tag.coral  {{ background: rgba(255,107,107,0.10); color: {CORAL}; }}
+            .section-tag.amber  {{ background: rgba(255,181,71,0.10); color: {AMBER}; }}
+            .section-tag.violet {{ background: rgba(167,139,250,0.10); color: {VIOLET}; }}
+            .section-tag.sky    {{ background: rgba(56,189,248,0.10); color: {SKY}; }}
+            .section-tag.lime   {{ background: rgba(132,204,22,0.10); color: {LIME}; }}
+            .section-tag.pink   {{ background: rgba(244,114,182,0.10); color: {PINK}; }}
             .section-title {{
-                color: #F8FBFF;
-                font-size: 1.5rem;
-                font-weight: 750;
+                color: #FFFFFF;
+                font-size: 1.55rem;
+                font-weight: 800;
                 margin-bottom: 0.15rem;
+                letter-spacing: -0.01em;
             }}
-            .section-subtitle {{
+            .section-sub {{
                 color: {MUTED};
-                font-size: 0.95rem;
-                margin-bottom: 1.1rem;
+                font-size: 0.93rem;
+                margin-bottom: 1.15rem;
+                line-height: 1.5;
             }}
-            .metric-card {{
+
+            /* ── KPI metric cards ─────────────────────────────────── */
+            .kpi {{
                 background: {SURFACE};
                 border: 1px solid {BORDER};
-                border-radius: 16px;
-                padding: 1.1rem 1.15rem;
-                min-height: 104px;
+                border-radius: 18px;
+                padding: 1.15rem 1.2rem;
+                position: relative;
+                overflow: hidden;
+                min-height: 108px;
             }}
-            .metric-label {{
+            .kpi::after {{
+                content: '';
+                position: absolute;
+                top: 0; left: 0; right: 0;
+                height: 3px;
+                border-radius: 18px 18px 0 0;
+            }}
+            .kpi.c0::after {{ background: linear-gradient(90deg, {TEAL}, {SKY}); }}
+            .kpi.c1::after {{ background: linear-gradient(90deg, {AMBER}, {CORAL}); }}
+            .kpi.c2::after {{ background: linear-gradient(90deg, {VIOLET}, {PINK}); }}
+            .kpi.c3::after {{ background: linear-gradient(90deg, {SKY}, {TEAL}); }}
+            .kpi-label {{
                 color: {MUTED};
-                font-size: 0.82rem;
-                margin-bottom: 0.4rem;
+                font-size: 0.78rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.45rem;
             }}
-            .metric-value {{
-                color: #F8FBFF;
-                font-size: 1.46rem;
-                font-weight: 760;
-                line-height: 1.25;
+            .kpi-value {{
+                color: #FFFFFF;
+                font-size: 1.5rem;
+                font-weight: 800;
+                line-height: 1.2;
             }}
-            .chart-card {{
+
+            /* ── chart cards ──────────────────────────────────────── */
+            .chart-wrap {{
                 background: {SURFACE};
                 border: 1px solid {BORDER};
                 border-radius: 20px;
-                padding: 1.2rem 1.2rem 0.8rem;
+                padding: 1.3rem 1.3rem 0.9rem;
                 margin-bottom: 1.2rem;
             }}
-            .chart-title {{
-                color: #F8FBFF;
-                font-size: 1.08rem;
+            .chart-head {{
+                color: #FFFFFF;
+                font-size: 1.05rem;
                 font-weight: 700;
-                margin-bottom: 0.2rem;
+                margin-bottom: 0.15rem;
             }}
-            .chart-subtitle {{
+            .chart-desc {{
                 color: {MUTED};
-                font-size: 0.88rem;
+                font-size: 0.85rem;
                 margin-bottom: 0.8rem;
             }}
-            .chart-caption {{
+            .chart-note {{
                 color: {MUTED};
-                font-size: 0.88rem;
-                margin-top: 0.45rem;
-                margin-bottom: 0.35rem;
+                font-size: 0.84rem;
+                margin-top: 0.4rem;
+                padding-top: 0.55rem;
+                border-top: 1px solid {BORDER};
             }}
-            .insight-box {{
-                background: {SUCCESS_BG};
-                border-left: 3px solid {PRIMARY};
-                border-radius: 12px;
-                padding: 0.95rem 1.05rem;
+
+            /* ── insight callout ──────────────────────────────────── */
+            .callout {{
+                border-radius: 14px;
+                padding: 1rem 1.15rem;
+                font-size: 0.94rem;
+                line-height: 1.65;
                 color: {TEXT};
-                font-size: 0.95rem;
                 margin: 0.8rem 0 1.2rem;
             }}
-            .prediction-shell {{
+            .callout.teal {{
+                background: rgba(0,229,195,0.08);
+                border-left: 3px solid {TEAL};
+            }}
+            .callout.amber {{
+                background: rgba(255,181,71,0.08);
+                border-left: 3px solid {AMBER};
+            }}
+            .callout.violet {{
+                background: rgba(167,139,250,0.08);
+                border-left: 3px solid {VIOLET};
+            }}
+
+            /* ── prediction form shell ────────────────────────────── */
+            .form-shell {{
                 background: linear-gradient(180deg, {SURFACE} 0%, {SURFACE_ALT} 100%);
-                border: 1px solid rgba(20,184,166,0.18);
-                border-radius: 20px;
-                padding: 1.2rem;
+                border: 1px solid rgba(0,229,195,0.12);
+                border-radius: 22px;
+                padding: 1.3rem;
             }}
-            .result-card {{
-                background: linear-gradient(160deg, #0B1324 0%, #11223A 100%);
-                border: 1px solid rgba(20,184,166,0.20);
-                border-radius: 20px;
-                padding: 1.35rem;
-                min-height: 240px;
-                box-shadow: 0 18px 30px rgba(0,0,0,0.22);
+
+            /* ── result card (salary output) ──────────────────────── */
+            .salary-result {{
+                background: linear-gradient(145deg, #101530 0%, #161D40 50%, #1A1240 100%);
+                border: 1px solid rgba(0,229,195,0.18);
+                border-radius: 22px;
+                padding: 1.5rem;
+                min-height: 250px;
+                position: relative;
+                overflow: hidden;
             }}
-            .result-label {{
+            .salary-result::before {{
+                content: '';
+                position: absolute;
+                top: -50%;
+                right: -30%;
+                width: 250px;
+                height: 250px;
+                background: radial-gradient(circle, rgba(0,229,195,0.10), transparent 70%);
+                border-radius: 50%;
+                pointer-events: none;
+            }}
+            .salary-result .label {{
                 color: {MUTED};
-                font-size: 0.86rem;
-                margin-bottom: 0.3rem;
+                font-size: 0.84rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.35rem;
+                position: relative;
             }}
-            .result-value {{
-                color: {PRIMARY};
-                font-size: 2.15rem;
+            .salary-result .amount {{
+                font-family: 'JetBrains Mono', 'Consolas', monospace;
+                font-size: 2.5rem;
                 font-weight: 800;
-                margin-bottom: 0.85rem;
+                background: linear-gradient(135deg, {TEAL}, {SKY});
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: 0.3rem;
+                position: relative;
             }}
-            .driver-card {{
+            .salary-result .yr {{
+                font-size: 0.9rem;
+                font-weight: 500;
+                color: {MUTED};
+                -webkit-text-fill-color: {MUTED};
+                background: none;
+                -webkit-background-clip: unset;
+                background-clip: unset;
+            }}
+            .salary-result .context {{
+                color: {MUTED};
+                font-size: 0.9rem;
+                margin-bottom: 0.8rem;
+                position: relative;
+            }}
+            .salary-result .comparison {{
+                color: {TEXT};
+                font-size: 0.95rem;
+                line-height: 1.6;
+                position: relative;
+            }}
+
+            /* ── driver card (explanation) ─────────────────────────── */
+            .drivers {{
                 background: {SURFACE_ALT};
                 border: 1px solid {BORDER};
-                border-radius: 16px;
-                padding: 1rem;
-                height: 100%;
+                border-radius: 18px;
+                padding: 1.1rem;
             }}
-            .driver-title {{
-                color: #F8FBFF;
+            .drivers .head {{
+                color: #FFFFFF;
                 font-size: 0.98rem;
                 font-weight: 700;
-                margin-bottom: 0.65rem;
+                margin-bottom: 0.7rem;
             }}
-            .driver-line {{
+            .drivers .line {{
+                display: flex;
+                align-items: flex-start;
+                gap: 0.55rem;
+                margin-bottom: 0.55rem;
+            }}
+            .drivers .bullet {{
+                flex-shrink: 0;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                margin-top: 0.5rem;
+            }}
+            .drivers .line:nth-child(2) .bullet {{ background: {TEAL}; }}
+            .drivers .line:nth-child(3) .bullet {{ background: {AMBER}; }}
+            .drivers .line:nth-child(4) .bullet {{ background: {CORAL}; }}
+            .drivers .line:nth-child(5) .bullet {{ background: {VIOLET}; }}
+            .drivers .msg {{
                 color: {TEXT};
                 font-size: 0.9rem;
                 line-height: 1.55;
-                margin-bottom: 0.45rem;
             }}
+
+            /* ── AI card ──────────────────────────────────────────── */
             .ai-card {{
-                background: {AI_BG};
-                border: 1px solid rgba(20,184,166,0.20);
-                border-radius: 18px;
-                padding: 1.1rem 1.15rem;
+                background: linear-gradient(135deg, rgba(0,229,195,0.07), rgba(167,139,250,0.06), rgba(56,189,248,0.05));
+                border: 1px solid rgba(0,229,195,0.15);
+                border-radius: 20px;
+                padding: 1.2rem 1.25rem;
                 min-height: 100%;
             }}
             .ai-badge {{
                 display: inline-flex;
                 align-items: center;
-                gap: 0.45rem;
-                background: rgba(20,184,166,0.14);
-                color: {PRIMARY};
-                border: 1px solid rgba(20,184,166,0.24);
+                gap: 0.4rem;
+                background: rgba(0,229,195,0.12);
+                color: {TEAL};
+                border: 1px solid rgba(0,229,195,0.22);
                 border-radius: 999px;
-                padding: 0.28rem 0.75rem;
-                font-size: 0.74rem;
+                padding: 0.25rem 0.7rem;
+                font-size: 0.7rem;
                 font-weight: 700;
                 letter-spacing: 0.08em;
                 text-transform: uppercase;
-                margin-bottom: 0.8rem;
+                margin-bottom: 0.85rem;
             }}
-            .ai-dot {{
-                width: 8px;
-                height: 8px;
-                border-radius: 999px;
-                background: {PRIMARY};
-                display: inline-block;
+            .ai-badge .dot {{
+                width: 7px; height: 7px;
+                border-radius: 50%;
+                background: {TEAL};
+                animation: pulse-dot 2s ease-in-out infinite;
             }}
             .ai-headline {{
-                color: #F8FBFF;
-                font-size: 1rem;
+                color: #FFFFFF;
+                font-size: 1.02rem;
                 font-weight: 700;
                 margin-bottom: 0.55rem;
             }}
             .ai-text {{
                 color: {TEXT};
-                font-size: 0.93rem;
-                line-height: 1.65;
-                margin-bottom: 0.75rem;
+                font-size: 0.92rem;
+                line-height: 1.7;
+                margin-bottom: 0.8rem;
             }}
             .ai-list {{
-                color: {MUTED};
-                font-size: 0.88rem;
-                line-height: 1.55;
-                padding-left: 1rem;
+                padding-left: 1.1rem;
                 margin: 0;
             }}
-            .takeaway-card {{
+            .ai-list li {{
+                color: {MUTED};
+                font-size: 0.87rem;
+                line-height: 1.55;
+                margin-bottom: 0.3rem;
+            }}
+
+            /* ── takeaway cards ────────────────────────────────────── */
+            .takeaway {{
                 background: {SURFACE};
                 border: 1px solid {BORDER};
-                border-radius: 16px;
-                padding: 1.05rem;
-                min-height: 120px;
+                border-radius: 18px;
+                padding: 1.15rem;
+                min-height: 130px;
+                position: relative;
+                overflow: hidden;
             }}
-            .takeaway-index {{
-                color: {PRIMARY};
-                font-size: 0.8rem;
-                font-weight: 700;
+            .takeaway::after {{
+                content: '';
+                position: absolute;
+                bottom: 0; left: 0; right: 0;
+                height: 3px;
+                border-radius: 0 0 18px 18px;
+            }}
+            .takeaway.t0::after {{ background: linear-gradient(90deg, {TEAL}, {SKY}); }}
+            .takeaway.t1::after {{ background: linear-gradient(90deg, {CORAL}, {AMBER}); }}
+            .takeaway.t2::after {{ background: linear-gradient(90deg, {VIOLET}, {PINK}); }}
+            .takeaway .num {{
+                font-size: 0.72rem;
+                font-weight: 800;
+                letter-spacing: 0.1em;
                 text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 0.5rem;
+                margin-bottom: 0.55rem;
             }}
+            .takeaway.t0 .num {{ color: {TEAL}; }}
+            .takeaway.t1 .num {{ color: {CORAL}; }}
+            .takeaway.t2 .num {{ color: {VIOLET}; }}
+            .takeaway .body {{
+                color: {TEXT};
+                font-size: 0.92rem;
+                line-height: 1.55;
+            }}
+
+            /* ── footer ───────────────────────────────────────────── */
             .footer {{
-                color: {MUTED};
-                font-size: 0.82rem;
                 text-align: center;
                 padding-top: 1.5rem;
-                margin-top: 2.8rem;
+                margin-top: 3rem;
                 border-top: 1px solid {BORDER};
             }}
+            .footer span {{
+                color: {MUTED};
+                font-size: 0.8rem;
+            }}
+            .footer .name {{
+                color: {TEAL};
+                font-weight: 700;
+            }}
+
+            /* ── streamlit overrides ──────────────────────────────── */
             .stButton > button {{
-                background: {PRIMARY} !important;
-                color: #08111F !important;
+                background: linear-gradient(135deg, {TEAL}, {TEAL_DIM}) !important;
+                color: #0A0E1A !important;
                 font-weight: 700 !important;
                 border: none !important;
-                border-radius: 12px !important;
-                padding: 0.65rem 1.25rem !important;
+                border-radius: 14px !important;
+                padding: 0.7rem 1.3rem !important;
+                font-size: 0.95rem !important;
+                letter-spacing: 0.02em !important;
+                transition: all 0.2s ease !important;
             }}
             .stButton > button:hover {{
-                background: {PRIMARY_DIM} !important;
-                color: #E5EEF8 !important;
+                filter: brightness(1.15) !important;
+                transform: translateY(-1px) !important;
+                box-shadow: 0 8px 24px rgba(0,229,195,0.25) !important;
             }}
             div[data-testid="stForm"] {{
                 border: none !important;
             }}
-            .stSelectbox label {{
+            .stSelectbox label, .stSlider label {{
                 color: {MUTED} !important;
+                font-weight: 500 !important;
+                font-size: 0.85rem !important;
+            }}
+            .stDataFrame {{
+                border-radius: 16px !important;
+                overflow: hidden !important;
             }}
         </style>
         """,
@@ -329,20 +548,18 @@ def initialize_session_state() -> None:
         st.session_state.setdefault(key, default_value)
 
 
-def section_header(eyebrow: str, title: str, subtitle: str) -> None:
-    st.markdown(f"<div class='eyebrow'>{eyebrow}</div>", unsafe_allow_html=True)
+def section_header(tag: str, tag_color: str, title: str, subtitle: str) -> None:
+    st.markdown(f"<div class='section-tag {tag_color}'>{tag}</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='section-title'>{title}</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='section-subtitle'>{subtitle}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-sub'>{subtitle}</div>", unsafe_allow_html=True)
 
 
-def render_metric_card(label: str, value: str) -> None:
+def render_kpi(label: str, value: str, index: int) -> None:
     st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">{label}</div>
-            <div class="metric-value">{value}</div>
-        </div>
-        """,
+        f"""<div class="kpi c{index % 4}">
+            <div class="kpi-label">{label}</div>
+            <div class="kpi-value">{value}</div>
+        </div>""",
         unsafe_allow_html=True,
     )
 
@@ -353,19 +570,23 @@ def apply_chart_style(fig: go.Figure) -> go.Figure:
         plot_bgcolor="rgba(0,0,0,0)",
         font=CHART_FONT,
         margin=CHART_MARGIN,
-        xaxis=dict(gridcolor="rgba(148,163,184,0.10)", zerolinecolor="rgba(148,163,184,0.10)"),
-        yaxis=dict(gridcolor="rgba(148,163,184,0.10)", zerolinecolor="rgba(148,163,184,0.10)"),
+        xaxis=dict(gridcolor="rgba(255,255,255,0.05)", zerolinecolor="rgba(255,255,255,0.05)"),
+        yaxis=dict(gridcolor="rgba(255,255,255,0.05)", zerolinecolor="rgba(255,255,255,0.05)"),
     )
     return fig
 
 
-def render_chart_card(title: str, subtitle: str) -> None:
-    st.markdown("<div class='chart-card'>", unsafe_allow_html=True)
-    st.markdown(f"<div class='chart-title'>{title}</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='chart-subtitle'>{subtitle}</div>", unsafe_allow_html=True)
+def chart_open(title: str, desc: str) -> None:
+    st.markdown("<div class='chart-wrap'>", unsafe_allow_html=True)
+    st.markdown(f"<div class='chart-head'>{title}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='chart-desc'>{desc}</div>", unsafe_allow_html=True)
 
 
-def close_chart_card() -> None:
+def chart_note(text: str) -> None:
+    st.markdown(f"<div class='chart-note'>{text}</div>", unsafe_allow_html=True)
+
+
+def chart_close() -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -403,7 +624,6 @@ def build_llm_chart_data(prediction_payload: dict[str, Any], df: pd.DataFrame) -
     }
 
 
-
 def load_supabase_history(limit: int = 20) -> tuple[pd.DataFrame | None, str | None]:
     settings = get_settings()
     if not settings.supabase_read_enabled:
@@ -439,12 +659,17 @@ def load_supabase_history(limit: int = 20) -> tuple[pd.DataFrame | None, str | N
     return pd.DataFrame(rows), None
 
 
-def render_driver_card(driver_messages: list[str]) -> None:
-    st.markdown("<div class='driver-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='driver-title'>What influenced this estimate?</div>", unsafe_allow_html=True)
-    for message in driver_messages:
-        st.markdown(f"<div class='driver-line'>- {message}</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+def render_drivers(driver_messages: list[str]) -> None:
+    lines_html = ""
+    for msg in driver_messages:
+        lines_html += f'<div class="line"><span class="bullet"></span><span class="msg">{msg}</span></div>'
+    st.markdown(
+        f"""<div class="drivers">
+            <div class="head">What influenced this estimate?</div>
+            {lines_html}
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
 
 def render_ai_card(llm_analysis: dict[str, Any] | None) -> None:
@@ -456,19 +681,19 @@ def render_ai_card(llm_analysis: dict[str, Any] | None) -> None:
             insights_html = f"<ul class='ai-list'>{bullets}</ul>"
 
         st.markdown(
-            f"""
-            <div class="ai-card">
-                <div class="ai-badge"><span class="ai-dot"></span>AI Insight | {model_label}</div>
+            f"""<div class="ai-card">
+                <div class="ai-badge"><span class="dot"></span>AI Insight &middot; {model_label}</div>
                 <div class="ai-headline">{llm_analysis['headline']}</div>
                 <div class="ai-text">{llm_analysis['narrative']}</div>
                 {insights_html}
-            </div>
-            """,
+            </div>""",
             unsafe_allow_html=True,
         )
     else:
         st.info("AI narrative is generated when predictions run through the local pipeline with Ollama enabled.")
 
+
+# ── main ─────────────────────────────────────────────────────────────────
 
 def main() -> None:
     inject_css()
@@ -478,239 +703,165 @@ def main() -> None:
     df, metrics = load_cached_data()
     options = get_filter_options(df)
 
+    # ── 1. Hero ──────────────────────────────────────────────────────────
     st.markdown(
         """
         <div class="hero">
-            <div class="hero-badge">PayScope</div>
-            <h1>Understand the salary story before you trust the prediction.</h1>
+            <div class="hero-tag"><span class="dot"></span> PayScope</div>
+            <h1>Understand the <span class="highlight">salary story</span><br>before you trust the prediction.</h1>
             <p>
-                PayScope turns salary data into a clear market story, then connects that story to one
-                live prediction you can explain with confidence in front of a non-technical audience.
+                PayScope turns salary data into a clear market story, then connects that story
+                to one live prediction you can explain with confidence.
             </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    section_header(
-        "Market Snapshot",
-        "A quick view of the salary landscape",
-        "These headline numbers frame the market before we move into the strongest salary patterns.",
-    )
+    # ── 2. KPI cards ─────────────────────────────────────────────────────
+    section_header("Market Snapshot", "teal", "A quick view of the salary landscape",
+                   "These headline numbers frame the market before we dig into the patterns.")
     kpis = get_kpi_snapshot(df)
-    kpi_columns = st.columns(len(kpis))
-    for column, metric in zip(kpi_columns, kpis):
-        with column:
-            render_metric_card(metric["label"], metric["value"])
+    kpi_cols = st.columns(len(kpis))
+    for i, (col, metric) in enumerate(zip(kpi_cols, kpis)):
+        with col:
+            render_kpi(metric["label"], metric["value"], i)
 
     if metrics:
         st.markdown(
-            (
-                f"<div class='insight-box'>The prediction model scores R\u00b2 "
-                f"<strong>{metrics.get('r2', 'N/A')}</strong> and RMSE "
-                f"<strong>${metrics.get('rmse', 0):,.0f}</strong> on held-out test data. "
-                f"Higher R\u00b2 means better fit; lower RMSE means smaller average error.</div>"
-            ),
+            f"""<div class="callout teal">
+                The prediction model scores R\u00b2 <strong>{metrics.get('r2', 'N/A')}</strong>
+                and RMSE <strong>${metrics.get('rmse', 0):,.0f}</strong> on held-out test data.
+                Higher R\u00b2 = better fit. Lower RMSE = smaller average error.
+            </div>""",
             unsafe_allow_html=True,
         )
 
-    section_header(
-        "Distribution",
-        "What does the overall salary market look like?",
-        "Start with the big picture: where most salaries cluster and how wide the market can stretch.",
+    # ── 3. Salary distribution ───────────────────────────────────────────
+    section_header("Distribution", "coral", "What does the overall salary market look like?",
+                   "Start with the big picture: where most salaries cluster and how wide the market stretches.")
+    chart_open("Salary distribution", "The overall shape of the market before we break it down by role and experience.")
+    hist = px.histogram(
+        get_salary_distribution(df), x=TARGET_COLUMN, nbins=30,
+        color_discrete_sequence=[TEAL],
     )
-    render_chart_card(
-        "Salary distribution",
-        "This shows the overall shape of the market before we break it down by role and experience.",
-    )
-    histogram = px.histogram(
-        get_salary_distribution(df),
-        x=TARGET_COLUMN,
-        nbins=30,
-        color_discrete_sequence=[PRIMARY],
-    )
-    histogram.update_layout(xaxis_title="Salary (USD)", yaxis_title="Number of records")
-    st.plotly_chart(apply_chart_style(histogram), use_container_width=True, config={"displayModeBar": False})
-    st.markdown(
-        "<div class='chart-caption'>Most salaries sit in a central band, with a smaller set of roles stretching the upper end of the market.</div>",
-        unsafe_allow_html=True,
-    )
-    close_chart_card()
+    hist.update_layout(xaxis_title="Salary (USD)", yaxis_title="Records")
+    st.plotly_chart(apply_chart_style(hist), use_container_width=True, config={"displayModeBar": False})
+    chart_note("Most salaries sit in a central band, with a smaller set of roles stretching the upper end.")
+    chart_close()
 
-    section_header(
-        "Experience and Pay",
-        "How does experience affect salary?",
-        "Experience is one of the clearest patterns in the dataset, so it deserves an early spotlight.",
-    )
-    render_chart_card(
-        "Experience level vs salary",
-        "The box plot shows both the typical salary and how much variation exists inside each experience level.",
-    )
-    experience_plot_df = df.copy()
-    experience_order = ["EN", "MI", "SE", "EX"]
-    experience_plot_df["experience_label"] = experience_plot_df["experience_level"].map(humanize_experience_level)
-    experience_chart = px.box(
-        experience_plot_df,
-        x="experience_label",
-        y=TARGET_COLUMN,
-        category_orders={"experience_label": [humanize_experience_level(code) for code in experience_order]},
-        color_discrete_sequence=[PRIMARY],
+    # ── 4. Experience ────────────────────────────────────────────────────
+    section_header("Experience & Pay", "amber", "How does experience affect salary?",
+                   "Experience is one of the clearest patterns in the dataset.")
+
+    exp_df = df.copy()
+    exp_order = ["EN", "MI", "SE", "EX"]
+    exp_df["experience_label"] = exp_df["experience_level"].map(humanize_experience_level)
+    chart_open("Experience level vs salary", "The box plot shows the typical salary and variation inside each level.")
+    exp_chart = px.box(
+        exp_df, x="experience_label", y=TARGET_COLUMN,
+        category_orders={"experience_label": [humanize_experience_level(c) for c in exp_order]},
+        color="experience_label",
+        color_discrete_sequence=[TEAL, AMBER, CORAL, VIOLET],
         points=False,
     )
-    experience_chart.update_layout(xaxis_title="", yaxis_title="Salary (USD)")
-    st.plotly_chart(apply_chart_style(experience_chart), use_container_width=True, config={"displayModeBar": False})
-    top_experience_label = get_experience_salary_summary(df).iloc[0]["experience_label"]
-    st.markdown(
-        f"<div class='chart-caption'>{top_experience_label} roles lead this comparison, which makes experience a strong signal in the prediction.</div>",
-        unsafe_allow_html=True,
-    )
-    close_chart_card()
+    exp_chart.update_layout(showlegend=False, xaxis_title="", yaxis_title="Salary (USD)")
+    st.plotly_chart(apply_chart_style(exp_chart), use_container_width=True, config={"displayModeBar": False})
+    top_exp = get_experience_salary_summary(df).iloc[0]["experience_label"]
+    chart_note(f"{top_exp} roles lead this comparison \u2014 experience is a strong signal in the prediction.")
+    chart_close()
 
-    section_header(
-        "Employment Setup",
-        "Which employment setup tends to pay more?",
-        "This comparison keeps the story practical by linking salary to the kind of work arrangement a person has.",
+    # ── 5. Employment type ───────────────────────────────────────────────
+    section_header("Employment Setup", "violet", "Which employment setup tends to pay more?",
+                   "Linking salary to the kind of work arrangement a person has.")
+    chart_open("Median salary by employment type", "Median keeps the comparison fair by reducing outlier effects.")
+    emp_summary = get_employment_salary_summary(df)
+    emp_chart = px.bar(
+        emp_summary, x="employment_label", y="median",
+        color="employment_label", color_discrete_sequence=CHART_PALETTE,
     )
-    render_chart_card(
-        "Median salary by employment type",
-        "Median salary keeps the comparison fair by reducing the effect of a few extreme outliers.",
-    )
-    employment_summary = get_employment_salary_summary(df)
-    employment_chart = px.bar(
-        employment_summary,
-        x="employment_label",
-        y="median",
-        color="employment_label",
-        color_discrete_sequence=CHART_COLORS,
-    )
-    employment_chart.update_layout(showlegend=False, xaxis_title="", yaxis_title="Median salary (USD)")
-    st.plotly_chart(apply_chart_style(employment_chart), use_container_width=True, config={"displayModeBar": False})
-    st.markdown(
-        "<div class='chart-caption'>Employment type changes the pay story, so it deserves a place in the prediction input form.</div>",
-        unsafe_allow_html=True,
-    )
-    close_chart_card()
+    emp_chart.update_layout(showlegend=False, xaxis_title="", yaxis_title="Median salary (USD)")
+    st.plotly_chart(apply_chart_style(emp_chart), use_container_width=True, config={"displayModeBar": False})
+    chart_note("Employment type changes the pay story \u2014 it deserves a place in the prediction input.")
+    chart_close()
 
-    section_header(
-        "Work Style",
-        "Does remote, hybrid, or on-site pay differently?",
-        "Work arrangement is one of the inputs to the prediction, so this chart shows how much it matters.",
-    )
-    render_chart_card(
-        "Median salary by work style",
-        "On-site, hybrid, and fully remote roles compared side by side on median pay.",
-    )
+    # ── 6. Work style ────────────────────────────────────────────────────
+    section_header("Work Style", "sky", "Does remote, hybrid, or on-site pay differently?",
+                   "Work arrangement is one of the prediction inputs \u2014 this chart shows how much it matters.")
+    chart_open("Median salary by work style", "On-site, hybrid, and fully remote compared side by side.")
     remote_summary = get_remote_salary_summary(df)
     remote_chart = px.bar(
-        remote_summary,
-        x="remote_label",
-        y="median",
-        color="remote_label",
-        color_discrete_sequence=CHART_COLORS,
+        remote_summary, x="remote_label", y="median",
+        color="remote_label", color_discrete_sequence=[CORAL, AMBER, TEAL],
     )
     remote_chart.update_layout(showlegend=False, xaxis_title="", yaxis_title="Median salary (USD)")
     st.plotly_chart(apply_chart_style(remote_chart), use_container_width=True, config={"displayModeBar": False})
-    st.markdown(
-        "<div class='chart-caption'>Work style affects pay, but the gap depends on role and experience. The model uses this alongside other inputs.</div>",
-        unsafe_allow_html=True,
-    )
-    close_chart_card()
+    chart_note("Work style affects pay, but the gap depends on role and experience. The model uses all inputs together.")
+    chart_close()
 
-    section_header(
-        "Top Roles",
-        "Which job titles tend to earn more?",
-        "This turns the salary story into something recognizable by comparing well-known job titles.",
-    )
-    render_chart_card(
-        "Top roles by median salary",
-        "Only roles with enough examples are included so the ranking stays presentation-safe.",
-    )
+    # ── 7. Top roles ─────────────────────────────────────────────────────
+    section_header("Top Roles", "lime", "Which job titles tend to earn more?",
+                   "Comparing well-known titles so the salary story feels recognizable.")
+    chart_open("Top roles by median salary", "Only roles with enough data points are included.")
     top_roles = get_top_roles_by_salary(df)
-    top_roles_chart = px.bar(
-        top_roles.sort_values("median"),
-        x="median",
-        y="job_title",
-        orientation="h",
-        color_discrete_sequence=[PRIMARY],
+    roles_chart = px.bar(
+        top_roles.sort_values("median"), x="median", y="job_title", orientation="h",
+        color_discrete_sequence=[TEAL],
     )
-    top_roles_chart.update_layout(xaxis_title="Median salary (USD)", yaxis_title="")
-    st.plotly_chart(apply_chart_style(top_roles_chart), use_container_width=True, config={"displayModeBar": False})
-    st.markdown(
-        "<div class='chart-caption'>Role title matters. Some jobs sit noticeably higher than others before we even add company or experience context.</div>",
-        unsafe_allow_html=True,
-    )
-    close_chart_card()
+    roles_chart.update_layout(xaxis_title="Median salary (USD)", yaxis_title="")
+    st.plotly_chart(apply_chart_style(roles_chart), use_container_width=True, config={"displayModeBar": False})
+    chart_note("Role title matters \u2014 some jobs sit noticeably higher before we add company or experience context.")
+    chart_close()
 
-    section_header(
-        "Salary Spread",
-        "Which roles show the widest salary spread?",
-        "This is the chart that proves title alone is not enough to explain salary.",
-    )
-    render_chart_card(
-        "Salary spread for the most variable roles",
-        "The wider the spread, the more the model needs experience, company size, and work style to narrow the estimate.",
-    )
+    # ── 8. Salary spread ─────────────────────────────────────────────────
+    section_header("Salary Spread", "pink", "Which roles show the widest salary range?",
+                   "This proves title alone is not enough to explain salary.")
+    chart_open("Salary spread for the most variable roles",
+               "The wider the spread, the more the model needs other inputs to narrow the estimate.")
     spread_df = get_role_spread_data(df)
     spread_chart = px.box(
-        spread_df,
-        x=TARGET_COLUMN,
-        y="job_title",
-        color="job_title",
-        color_discrete_sequence=CHART_COLORS,
-        points=False,
+        spread_df, x=TARGET_COLUMN, y="job_title",
+        color="job_title", color_discrete_sequence=CHART_PALETTE, points=False,
     )
     spread_chart.update_layout(showlegend=False, xaxis_title="Salary (USD)", yaxis_title="")
     st.plotly_chart(apply_chart_style(spread_chart), use_container_width=True, config={"displayModeBar": False})
-    st.markdown(
-        "<div class='chart-caption'>Some roles cover a wide pay range, which is why the prediction uses multiple inputs instead of title alone.</div>",
-        unsafe_allow_html=True,
-    )
-    close_chart_card()
+    chart_note("Wide pay ranges explain why the prediction uses multiple inputs instead of title alone.")
+    chart_close()
 
-    section_header(
-        "Prediction Studio",
-        "Get a live salary estimate",
-        "Choose a profile below and the model will predict an annual salary in USD based on the patterns in this dataset.",
-    )
-    left_column, right_column = st.columns([1.1, 0.9], gap="large")
+    # ── 9. Prediction Studio ─────────────────────────────────────────────
+    section_header("Prediction Studio", "teal", "Get a live salary estimate",
+                   "Choose a profile and the model predicts an annual salary in USD based on the dataset patterns.")
+    left_col, right_col = st.columns([1.1, 0.9], gap="large")
 
-    with left_column:
-        st.markdown("<div class='prediction-shell'>", unsafe_allow_html=True)
+    with left_col:
+        st.markdown("<div class='form-shell'>", unsafe_allow_html=True)
         with st.form("prediction_form"):
             experience_level = st.selectbox(
-                "Experience level",
-                options=options["experience_level"],
+                "Experience level", options=options["experience_level"],
                 format_func=humanize_experience_level,
             )
             employment_type = st.selectbox(
-                "Employment type",
-                options=options["employment_type"],
+                "Employment type", options=options["employment_type"],
                 format_func=humanize_employment_type,
             )
-            default_job_title = options["job_title"].index("Data Scientist") if "Data Scientist" in options["job_title"] else 0
-            job_title = st.selectbox("Job title", options=options["job_title"], index=default_job_title)
-            default_residence = options["employee_residence"].index("US") if "US" in options["employee_residence"] else 0
+            default_jt = options["job_title"].index("Data Scientist") if "Data Scientist" in options["job_title"] else 0
+            job_title = st.selectbox("Job title", options=options["job_title"], index=default_jt)
+            default_res = options["employee_residence"].index("US") if "US" in options["employee_residence"] else 0
             employee_residence = st.selectbox(
-                "Employee residence",
-                options=options["employee_residence"],
-                format_func=humanize_country_code,
-                index=default_residence,
+                "Employee residence", options=options["employee_residence"],
+                format_func=humanize_country_code, index=default_res,
             )
-            default_location = options["company_location"].index("US") if "US" in options["company_location"] else 0
+            default_loc = options["company_location"].index("US") if "US" in options["company_location"] else 0
             company_location = st.selectbox(
-                "Company location",
-                options=options["company_location"],
-                format_func=humanize_country_code,
-                index=default_location,
+                "Company location", options=options["company_location"],
+                format_func=humanize_country_code, index=default_loc,
             )
             company_size = st.selectbox(
-                "Company size",
-                options=options["company_size"],
+                "Company size", options=options["company_size"],
                 format_func=humanize_company_size,
             )
             remote_ratio = st.selectbox(
-                "Work style",
-                options=options["remote_ratio"],
+                "Work style", options=options["remote_ratio"],
                 format_func=humanize_remote_ratio,
             )
             submitted = st.form_submit_button("Predict salary", use_container_width=True)
@@ -734,99 +885,79 @@ def main() -> None:
             st.session_state["prediction_payload"] = prediction_payload
             st.session_state["prediction_error"] = None
 
-    with right_column:
-        prediction_payload = st.session_state["prediction_payload"]
-        prediction_error = st.session_state["prediction_error"]
-        if prediction_payload:
-            predicted_salary = prediction_payload["predicted_salary_usd"]
-            peer_context = prediction_payload["peer_context"]
+    with right_col:
+        pred = st.session_state["prediction_payload"]
+        pred_err = st.session_state["prediction_error"]
+        if pred:
+            salary = pred["predicted_salary_usd"]
+            peer = pred["peer_context"]
             st.markdown(
-                f"""
-                <div class="result-card">
-                    <div class="result-label">Predicted annual salary (USD)</div>
-                    <div class="result-value">${predicted_salary:,.0f}<span style="font-size:0.85rem;font-weight:500;color:{MUTED};margin-left:0.4rem">/ year</span></div>
-                    <div style="color:{MUTED};font-size:0.92rem;margin-bottom:0.75rem">
-                        Built from {peer_context['sample_size']} similar records in the dataset.
-                    </div>
-                    <div style="color:{TEXT};font-size:0.95rem;line-height:1.6">
-                        {peer_context['comparison_text']}
-                    </div>
-                </div>
-                """,
+                f"""<div class="salary-result">
+                    <div class="label">Predicted annual salary</div>
+                    <div class="amount">${salary:,.0f} <span class="yr">/ year</span></div>
+                    <div class="context">Built from {peer['sample_size']} similar records in the dataset.</div>
+                    <div class="comparison">{peer['comparison_text']}</div>
+                </div>""",
                 unsafe_allow_html=True,
             )
-        elif prediction_error:
-            st.warning(prediction_error)
+        elif pred_err:
+            st.warning(pred_err)
         else:
             st.info("Start the API, submit the form, and the live prediction will appear here.")
 
-    section_header(
-        "Why This Prediction Makes Sense",
-        "The data behind the estimate",
-        "See how the prediction connects to real salary records, peer benchmarks, and market context.",
-    )
-    prediction_payload = st.session_state["prediction_payload"]
-    if prediction_payload:
-        peer_context = prediction_payload["peer_context"]
-        summary_columns = st.columns(3)
-        with summary_columns[0]:
-            render_metric_card("Peer group", peer_context["match_label"].title())
-        with summary_columns[1]:
-            render_metric_card("Typical salary", f"${peer_context['peer_median_salary_usd']:,.0f}")
-        with summary_columns[2]:
-            render_metric_card(
-                "Observed range",
-                f"${peer_context['peer_min_salary_usd']:,.0f} - ${peer_context['peer_max_salary_usd']:,.0f}",
-            )
+    # ── 10. Explanation section ───────────────────────────────────────────
+    section_header("Why This Prediction", "amber",
+                   "The data behind the estimate",
+                   "How the prediction connects to real salary records, peer benchmarks, and market context.")
+    pred = st.session_state["prediction_payload"]
+    if pred:
+        peer = pred["peer_context"]
+        s1, s2, s3 = st.columns(3)
+        with s1:
+            render_kpi("Peer group", peer["match_label"].title(), 0)
+        with s2:
+            render_kpi("Typical salary", f"${peer['peer_median_salary_usd']:,.0f}", 1)
+        with s3:
+            render_kpi("Observed range",
+                       f"${peer['peer_min_salary_usd']:,.0f} \u2013 ${peer['peer_max_salary_usd']:,.0f}", 2)
 
         st.markdown(
-            f"<div class='insight-box'>{peer_context['explanation_summary']}</div>",
+            f"<div class='callout amber'>{peer['explanation_summary']}</div>",
             unsafe_allow_html=True,
         )
 
-        detail_columns = st.columns([1.05, 0.95], gap="large")
-        with detail_columns[0]:
-            render_driver_card(peer_context["driver_messages"])
+        d1, d2 = st.columns([1.05, 0.95], gap="large")
+        with d1:
+            render_drivers(peer["driver_messages"])
 
-        with detail_columns[1]:
-            chart_data = build_llm_chart_data(prediction_payload, df)
-            render_chart_card(
-                "How the estimate compares",
-                "This chart compares the prediction against the peer group median and the broader market median.",
-            )
-            comparison_fig = go.Figure(
+        with d2:
+            chart_data = build_llm_chart_data(pred, df)
+            chart_open("How the estimate compares",
+                       "Prediction vs. peer group median vs. broader market median.")
+            comp_fig = go.Figure(
                 go.Bar(
                     x=chart_data["values"],
                     y=chart_data["labels"],
                     orientation="h",
-                    marker_color=[PRIMARY, ACCENT, ACCENT_SOFT],
-                    text=[f"${value:,.0f}" for value in chart_data["values"]],
+                    marker_color=[TEAL, AMBER, VIOLET],
+                    text=[f"${v:,.0f}" for v in chart_data["values"]],
                     textposition="auto",
+                    textfont=dict(color="#FFFFFF", size=13, family="Inter"),
                 )
             )
-            comparison_fig.update_layout(xaxis_title="Salary (USD)", yaxis_title="", height=260)
-            st.plotly_chart(
-                apply_chart_style(comparison_fig),
-                use_container_width=True,
-                config={"displayModeBar": False},
-            )
-            st.markdown(
-                "<div class='chart-caption'>One clear view of the estimate against peer and market benchmarks.</div>",
-                unsafe_allow_html=True,
-            )
-            close_chart_card()
+            comp_fig.update_layout(xaxis_title="Salary (USD)", yaxis_title="", height=260)
+            st.plotly_chart(apply_chart_style(comp_fig), use_container_width=True, config={"displayModeBar": False})
+            chart_close()
 
-            render_ai_card(prediction_payload.get("llm_analysis"))
+            render_ai_card(pred.get("llm_analysis"))
     else:
-        st.info("Run a prediction first, then this section will explain the result in plain English.")
+        st.info("Run a prediction first, then this section will explain the result.")
 
+    # ── 11. History ──────────────────────────────────────────────────────
     history_df, history_error = load_supabase_history()
     if history_df is not None or history_error:
-        section_header(
-            "History",
-            "Saved predictions from Supabase",
-            "Every prediction made through the API is persisted to Supabase. The dashboard reads directly from there.",
-        )
+        section_header("History", "violet", "Saved predictions from Supabase",
+                       "Every prediction made through the API is persisted. The dashboard reads directly from there.")
         if history_error:
             st.info(history_error)
         elif history_df is not None and history_df.empty:
@@ -856,31 +987,26 @@ def main() -> None:
                 display_df["Date"] = pd.to_datetime(display_df["Date"], errors="coerce").dt.strftime("%b %d, %Y %H:%M")
             st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-    section_header(
-        "Takeaways",
-        "Three insights the audience should remember",
-        "These are short, presentation-ready points to close the story cleanly.",
-    )
+    # ── 12. Takeaways ────────────────────────────────────────────────────
+    section_header("Takeaways", "coral", "Three insights the audience should remember",
+                   "Short, presentation-ready points to close the story cleanly.")
     takeaways = build_takeaways(df)
-    takeaway_columns = st.columns(len(takeaways))
-    for index, (column, takeaway) in enumerate(zip(takeaway_columns, takeaways), start=1):
-        with column:
+    tw_cols = st.columns(len(takeaways))
+    for i, (col, tw) in enumerate(zip(tw_cols, takeaways)):
+        with col:
             st.markdown(
-                f"""
-                <div class="takeaway-card">
-                    <div class="takeaway-index">Takeaway {index}</div>
-                    <div style="color:{TEXT};font-size:0.93rem;line-height:1.55">{takeaway}</div>
-                </div>
-                """,
+                f"""<div class="takeaway t{i}">
+                    <div class="num">Takeaway {i + 1}</div>
+                    <div class="body">{tw}</div>
+                </div>""",
                 unsafe_allow_html=True,
             )
 
+    # ── footer ───────────────────────────────────────────────────────────
     st.markdown(
-        """
-        <div class="footer">
-            <strong>PayScope</strong> | Salary Prediction Dashboard | Yasser Hamdan
-        </div>
-        """,
+        """<div class="footer">
+            <span><span class="name">PayScope</span> &middot; Salary Prediction Dashboard &middot; Yasser Hamdan</span>
+        </div>""",
         unsafe_allow_html=True,
     )
 
