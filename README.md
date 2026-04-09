@@ -1,231 +1,251 @@
 # PayScope
 
-Local-first salary prediction app with a Decision Tree model, FastAPI `GET /predict`, a separate Python client, a story-first Streamlit dashboard, local Ollama analysis, and optional Supabase persistence.
+**Predict data-science salaries, explain the estimate, and tell the story — all in one dashboard.**
 
-## Current Run Mode
+Built as a Week 1 assignment for the AI Engineering Program: train a Decision Tree model on the Kaggle DS Salaries dataset, serve predictions through a GET API, analyze them with a local LLM, persist results to Supabase, and present everything in a Streamlit dashboard that a non-technical audience can follow.
 
-- Dashboard: local Streamlit app
-- API: local FastAPI service
-- Deployment: intentionally skipped for this assignment version
+---
 
 ## Architecture
 
 ```text
-DS Salaries CSV
-    ->
-data cleaning + preprocessing
-    ->
-Decision Tree training
-    ->
-saved model artifact + metrics
-    ->
-FastAPI GET /predict
-    ->
-Streamlit dashboard
-        ->
-        plain-English explanation
-        AI narrative from Ollama
-        optional history from Supabase
+ds_salaries.csv
+      |
+      v
+ Data cleaning + feature selection  (ml.py)
+      |
+      v
+ Decision Tree training + artifact saving  (train_model.py)
+      |
+      v
+ FastAPI GET /predict  (api.py)
+      |               \
+      v                --> Supabase write (optional, env-gated)
+ Streamlit dashboard  (dashboard.py)
+      |
+      +--> Market charts from cleaned CSV
+      +--> Live prediction via FastAPI
+      +--> Peer-group explanation from dataset
+      +--> AI narrative from Ollama (optional)
+      +--> Saved prediction history from Supabase (optional)
 ```
 
-## What This App Does
+### Local flow
 
-- Trains a Decision Tree salary prediction model on the DS Salaries dataset.
-- Exposes a required `GET /predict` API with validated query parameters.
-- Includes a separate Python client script that calls the API and handles errors safely.
-- Presents a polished storytelling dashboard designed for a non-technical audience.
-- Adds local LLM narrative analysis through Ollama.
-- Can save prediction history to Supabase and read it back into the dashboard.
+```
+train_model.py  -->  FastAPI (localhost:8000)  -->  Streamlit (localhost:8501)
+```
 
-## Project Files
+### Deployed flow
 
-- `config.py` loads environment variables and shared paths.
-- `ml.py` handles cleaning, training, artifact saving, and prediction logic.
-- `analysis.py` prepares chart summaries and peer-group explanation data.
-- `api.py` runs FastAPI and writes predictions to Supabase when configured.
-- `dashboard.py` runs Streamlit and renders the full story-first UI.
-- `predict_client.py` is the required standalone API caller.
-- `train_model.py` trains the model and saves local artifacts.
-- `supabase_schema.sql` contains the SQL to create the Supabase predictions table.
-- `render.yaml` prepares the FastAPI app for Render deployment.
-- `.streamlit/config.toml` provides Streamlit theme settings for local and cloud runs.
+```
+Render (FastAPI)  <--  Streamlit Community Cloud (dashboard)
+      |
+      v
+  Supabase (prediction history)
+```
+
+---
+
+## Live URLs
+
+| Service | URL |
+|---------|-----|
+| Dashboard | _Streamlit Community Cloud URL here_ |
+| API | _Render URL here_ |
+| API Docs | _Render URL here_ `/docs` |
+
+---
 
 ## Local Setup
 
-1. Install dependencies:
+### Prerequisites
+
+- Python 3.10+
+- (Optional) Ollama installed with a model pulled
+- (Optional) Supabase project with the schema applied
+
+### Steps
 
 ```bash
-python -m pip install -r requirements.txt
-```
+# 1. Clone and enter the repo
+git clone <repo-url>
+cd Week1-ProjectSalaryPrediction
 
-2. Train the model:
+# 2. Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS / Linux
 
-```bash
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Copy the environment template
+cp .env.example .env
+# Edit .env if you want to enable Ollama or Supabase
+
+# 5. Train the model
 python train_model.py
-```
 
-3. Start FastAPI:
-
-```bash
+# 6. Start FastAPI
 uvicorn api:app --reload --host 127.0.0.1 --port 8000
-```
 
-4. Start Streamlit in a second terminal:
-
-```bash
+# 7. In a second terminal, start Streamlit
 streamlit run dashboard.py --server.address 127.0.0.1 --server.port 8501
 ```
 
-5. Optional: run the separate client script:
-
-```bash
-python predict_client.py --experience-level SE --employment-type FT --job-title "Data Scientist" --employee-residence US --company-location US --company-size M --remote-ratio 100
-```
-
-Local URLs after startup:
+After startup:
 
 - Dashboard: `http://127.0.0.1:8501`
 - API docs: `http://127.0.0.1:8000/docs`
-- API health: `http://127.0.0.1:8000/health`
+- Health check: `http://127.0.0.1:8000/health`
 
-## Environment Variables
+---
 
-Core local variables:
+## API Documentation
 
-```text
-APP_ENV
-LOG_LEVEL
-DATASET_PATH
-PROCESSED_DATA_PATH
-MODEL_PATH
-METRICS_PATH
-FASTAPI_HOST
-FASTAPI_PORT
-FASTAPI_BASE_URL
-STREAMLIT_HOST
-STREAMLIT_PORT
-REQUEST_TIMEOUT_SECONDS
-```
-
-Optional integration variables:
-
-```text
-OLLAMA_BASE_URL
-OLLAMA_MODEL
-OLLAMA_TIMEOUT_SECONDS
-SUPABASE_URL
-SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_PREDICTIONS_TABLE
-```
-
-Copy `.env.example` to `.env` and update only the values you need.
-
-## API Docs
-
-### Health check
+### `GET /health`
 
 ```bash
 curl "http://127.0.0.1:8000/health"
 ```
 
-### Prediction endpoint
+Returns model and data readiness status.
+
+### `GET /predict`
 
 ```bash
 curl "http://127.0.0.1:8000/predict?experience_level=SE&employment_type=FT&job_title=Data%20Scientist&employee_residence=US&company_location=US&company_size=M&remote_ratio=100"
 ```
 
-### Required query parameters
+**Required query parameters:**
 
-- `experience_level`: `EN`, `MI`, `SE`, `EX`
-- `employment_type`: `FT`, `PT`, `CT`, `FL`
-- `job_title`: free-text role name
-- `employee_residence`: 2-letter country code
-- `company_location`: 2-letter country code
-- `company_size`: `S`, `M`, `L`
-- `remote_ratio`: `0`, `50`, `100`
+| Parameter | Values | Description |
+|-----------|--------|-------------|
+| `experience_level` | `EN`, `MI`, `SE`, `EX` | Entry / Mid / Senior / Executive |
+| `employment_type` | `FT`, `PT`, `CT`, `FL` | Full-time / Part-time / Contract / Freelance |
+| `job_title` | free text | Role name (e.g. "Data Scientist") |
+| `employee_residence` | 2-letter code | Country where the employee lives |
+| `company_location` | 2-letter code | Country where the company is based |
+| `company_size` | `S`, `M`, `L` | Small / Medium / Large |
+| `remote_ratio` | `0`, `50`, `100` | On-site / Hybrid / Fully remote |
 
-## Client Script Usage
+**Response** includes `predicted_salary_usd`, `normalized_inputs`, `model_name`, and `peer_context` with peer median, range, comparison text, and driver messages.
+
+---
+
+## Client Script
+
+The assignment requires a separate Python script that calls the API with proper error handling.
 
 ```bash
-python predict_client.py --experience-level SE --employment-type FT --job-title "Data Scientist" --employee-residence US --company-location US --company-size M --remote-ratio 100
+python predict_client.py \
+  --experience-level SE \
+  --employment-type FT \
+  --job-title "Data Scientist" \
+  --employee-residence US \
+  --company-location US \
+  --company-size M \
+  --remote-ratio 100
 ```
 
-The script prints:
+The script handles timeout, connection failure, HTTP errors, and invalid JSON gracefully. It prints the predicted salary, peer group, sample size, and comparison.
 
-- predicted salary
-- peer group label
-- peer group size
-- comparison to the peer median
+---
 
-## Ollama Setup
+## Ollama (Local LLM)
 
-1. Install Ollama locally.
-2. Pull a model such as:
+The assignment requires narrative insights and at least one supporting visualization using a local LLM.
+
+1. Install Ollama and pull a model:
 
 ```bash
 ollama pull llama3.2
 ```
 
-3. Add this to `.env`:
+2. Set these in `.env`:
 
-```text
+```
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=llama3.2
-OLLAMA_TIMEOUT_SECONDS=60
 ```
 
-4. Restart Streamlit after updating `.env`.
+3. Restart Streamlit.
 
-If Ollama is unavailable, the dashboard still works and shows a graceful message instead of breaking.
+The dashboard sends prediction context to Ollama, asks for structured JSON output (headline, narrative, insights), and renders the result in a premium AI Insight card alongside a comparison chart.
 
-## Supabase Setup
+If Ollama is unavailable, the dashboard still works — it shows a graceful message instead of breaking.
 
-Run the SQL in `supabase_schema.sql` inside the Supabase SQL editor.
+---
 
-Required env vars for Supabase:
+## Supabase
 
-```text
-SUPABASE_URL=your_project_url
+The assignment requires persisting predictions and reading them back in the dashboard.
+
+### Architecture note: what the dashboard reads from Supabase
+
+The assignment says the dashboard should consume from Supabase. In this project:
+
+- **Prediction history** is read directly from Supabase. Every prediction the API serves is written to the `salary_predictions` table, and the dashboard reads it back for the History section.
+- **Market overview charts** use the static training dataset (cleaned CSV). This data does not change between predictions and does not belong in a transactional table. Storing 600+ static rows in Supabase just to re-read them would add complexity without benefit.
+- **Live predictions** come from the FastAPI response (which also writes to Supabase). The dashboard shows the result immediately rather than round-tripping through Supabase, because the user is waiting for a response.
+
+This is a deliberate tradeoff: Supabase stores and serves all dynamic prediction data, while static analysis data stays embedded.
+
+### Schema
+
+Run the SQL in `supabase_schema.sql` inside the Supabase SQL editor. It creates the `salary_predictions` table with appropriate columns, constraints, indexes, and row-level security policies.
+
+### Environment variables
+
+```
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 SUPABASE_PREDICTIONS_TABLE=salary_predictions
 ```
 
-What each key is used for:
+- **API** (`api.py`) uses the service role key to write each prediction to Supabase.
+- **Dashboard** (`dashboard.py`) uses the anon key to read saved prediction history.
 
-- `SUPABASE_SERVICE_ROLE_KEY`: used by `api.py` to write predictions
-- `SUPABASE_ANON_KEY`: used by `dashboard.py` to read prediction history
-- `SUPABASE_URL`: shared base URL for both paths
-- `SUPABASE_PREDICTIONS_TABLE`: current table name
+If Supabase env vars are not set, both paths are silently skipped and the app works fully without them.
 
-## Final Non-Deployment Checklist
+---
 
-- Train the model and confirm the artifact and metrics exist.
-- Start FastAPI and Streamlit locally.
-- Run one prediction from the dashboard and one from `predict_client.py`.
-- If you want history, run `supabase_schema.sql`, set the Supabase env vars, and confirm one saved prediction appears in the dashboard history section.
-- Take screenshots of the hero section, Prediction Studio, and Why This Prediction Makes Sense section before submission.
+## Deployment
 
-## Tech Stack
+### FastAPI on Render
 
-- Python
-- pandas
-- numpy
-- scikit-learn
-- FastAPI
-- Streamlit
-- Plotly
-- Ollama
-- Supabase
-- python-dotenv
-- pytest
+- `render.yaml` configures the web service.
+- The model artifact (`artifacts/decision_tree_pipeline.joblib`) and dataset must be present at deploy time (committed to the repo or generated during build).
+- Set Supabase env vars in Render's environment settings if you want persistence.
 
-## Suggested Screenshots
+### Streamlit on Community Cloud
 
-- Hero section with KPI cards
-- Prediction Studio with a completed prediction
-- Why This Prediction Makes Sense with peer comparison and AI insight
+- Point to `dashboard.py` as the main file.
+- Set `FASTAPI_BASE_URL` in Streamlit secrets to the deployed Render URL.
+- Ollama will not be available in the cloud. The dashboard handles this gracefully — the AI Insight section shows an informational message instead.
+- Set Supabase env vars in Streamlit secrets if you want the history section.
+
+---
+
+## Project Files
+
+| File | Purpose |
+|------|---------|
+| `config.py` | Loads `.env`, resolves paths, exposes `Settings` |
+| `ml.py` | Data cleaning, Decision Tree pipeline, training, prediction, label helpers |
+| `analysis.py` | KPIs, chart summaries, peer-group explanation, takeaways |
+| `api.py` | FastAPI with `GET /health` and `GET /predict`, optional Supabase write |
+| `dashboard.py` | Streamlit UI — charts, prediction studio, explanation, AI insight |
+| `predict_client.py` | Standalone API client with error handling |
+| `train_model.py` | Entry script to train and save artifacts |
+| `supabase_schema.sql` | SQL to create the predictions table in Supabase |
+| `render.yaml` | Render deployment config for the API |
+| `.streamlit/config.toml` | Dark theme configuration |
+| `requirements.txt` | Python dependencies |
+
+---
 
 ## Testing
 
@@ -233,6 +253,20 @@ What each key is used for:
 pytest
 ```
 
+Runs 4 tests covering data cleaning, model training, prediction endpoint, and input validation.
+
+---
+
+## Screenshots
+
+_Add screenshots of:_
+- _Hero section with KPI cards_
+- _Market charts_
+- _Prediction Studio with a completed prediction_
+- _Why This Prediction Makes Sense with peer comparison and AI insight_
+
+---
+
 ## Author
 
-Yasser Hamdan
+**Yasser Hamdan**

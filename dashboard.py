@@ -15,6 +15,7 @@ from analysis import (
     get_experience_salary_summary,
     get_filter_options,
     get_kpi_snapshot,
+    get_remote_salary_summary,
     get_role_spread_data,
     get_salary_distribution,
     get_top_roles_by_salary,
@@ -24,6 +25,7 @@ from config import get_settings
 from ml import (
     TARGET_COLUMN,
     humanize_company_size,
+    humanize_country_code,
     humanize_employment_type,
     humanize_experience_level,
     humanize_remote_ratio,
@@ -604,10 +606,10 @@ def main() -> None:
     if metrics:
         st.markdown(
             (
-                f"<div class='insight-box'>The current model was evaluated with R2 "
+                f"<div class='insight-box'>The prediction model scores R\u00b2 "
                 f"<strong>{metrics.get('r2', 'N/A')}</strong> and RMSE "
-                f"<strong>${metrics.get('rmse', 0):,.0f}</strong>. The dashboard keeps this light, "
-                f"but the numbers are ready for Saturday code review.</div>"
+                f"<strong>${metrics.get('rmse', 0):,.0f}</strong> on held-out test data. "
+                f"Higher R\u00b2 means better fit; lower RMSE means smaller average error.</div>"
             ),
             unsafe_allow_html=True,
         )
@@ -690,6 +692,31 @@ def main() -> None:
     close_chart_card()
 
     section_header(
+        "Work Style",
+        "Does remote, hybrid, or on-site pay differently?",
+        "Work arrangement is one of the inputs to the prediction, so this chart shows how much it matters.",
+    )
+    render_chart_card(
+        "Median salary by work style",
+        "On-site, hybrid, and fully remote roles compared side by side on median pay.",
+    )
+    remote_summary = get_remote_salary_summary(df)
+    remote_chart = px.bar(
+        remote_summary,
+        x="remote_label",
+        y="median",
+        color="remote_label",
+        color_discrete_sequence=CHART_COLORS,
+    )
+    remote_chart.update_layout(showlegend=False, xaxis_title="", yaxis_title="Median salary (USD)")
+    st.plotly_chart(apply_chart_style(remote_chart), use_container_width=True, config={"displayModeBar": False})
+    st.markdown(
+        "<div class='chart-caption'>Work style affects pay, but the gap depends on role and experience. The model uses this alongside other inputs.</div>",
+        unsafe_allow_html=True,
+    )
+    close_chart_card()
+
+    section_header(
         "Top Roles",
         "Which job titles tend to earn more?",
         "This turns the salary story into something recognizable by comparing well-known job titles.",
@@ -742,8 +769,8 @@ def main() -> None:
 
     section_header(
         "Prediction Studio",
-        "Get a live estimate",
-        "Now turn the market story into one concrete salary prediction that you can present and explain.",
+        "Get a live salary estimate",
+        "Choose a profile below and the model will predict an annual salary in USD based on the patterns in this dataset.",
     )
     left_column, right_column = st.columns([1.1, 0.9], gap="large")
 
@@ -766,12 +793,14 @@ def main() -> None:
             employee_residence = st.selectbox(
                 "Employee residence",
                 options=options["employee_residence"],
+                format_func=humanize_country_code,
                 index=default_residence,
             )
             default_location = options["company_location"].index("US") if "US" in options["company_location"] else 0
             company_location = st.selectbox(
                 "Company location",
                 options=options["company_location"],
+                format_func=humanize_country_code,
                 index=default_location,
             )
             company_size = st.selectbox(
@@ -821,8 +850,8 @@ def main() -> None:
             st.markdown(
                 f"""
                 <div class="result-card">
-                    <div class="result-label">Predicted salary</div>
-                    <div class="result-value">${predicted_salary:,.0f}</div>
+                    <div class="result-label">Predicted annual salary (USD)</div>
+                    <div class="result-value">${predicted_salary:,.0f}<span style="font-size:0.85rem;font-weight:500;color:{MUTED};margin-left:0.4rem">/ year</span></div>
                     <div style="color:{MUTED};font-size:0.92rem;margin-bottom:0.75rem">
                         Built from {peer_context['sample_size']} similar records in the dataset.
                     </div>
@@ -840,8 +869,8 @@ def main() -> None:
 
     section_header(
         "Why This Prediction Makes Sense",
-        "This is the main explanation section",
-        "Use this part in the presentation to connect the prediction to similar records, market benchmarks, and a plain-English summary.",
+        "The data behind the estimate",
+        "See how the prediction connects to real salary records, peer benchmarks, and market context.",
     )
     prediction_payload = st.session_state["prediction_payload"]
     if prediction_payload:
@@ -899,6 +928,42 @@ def main() -> None:
     else:
         st.info("Run a prediction first, then this section will explain the result in plain English.")
 
+    history_df, history_error = load_supabase_history()
+    if history_df is not None or history_error:
+        section_header(
+            "History",
+            "Saved predictions from Supabase",
+            "Every prediction made through the API is persisted to Supabase. The dashboard reads directly from there.",
+        )
+        if history_error:
+            st.info(history_error)
+        elif history_df is not None and history_df.empty:
+            st.info("Supabase is connected, but there are no saved predictions yet.")
+        elif history_df is not None:
+            display_df = history_df.rename(columns={
+                "created_at": "Date",
+                "job_title": "Role",
+                "experience_level": "Experience",
+                "employment_type": "Employment",
+                "company_size": "Company size",
+                "remote_ratio": "Work style",
+                "predicted_salary_usd": "Predicted salary (USD)",
+                "comparison_text": "Comparison",
+            })
+            if "Experience" in display_df.columns:
+                display_df["Experience"] = display_df["Experience"].map(humanize_experience_level)
+            if "Employment" in display_df.columns:
+                display_df["Employment"] = display_df["Employment"].map(humanize_employment_type)
+            if "Company size" in display_df.columns:
+                display_df["Company size"] = display_df["Company size"].map(humanize_company_size)
+            if "Work style" in display_df.columns:
+                display_df["Work style"] = display_df["Work style"].apply(
+                    lambda v: humanize_remote_ratio(int(v)) if pd.notna(v) else v
+                )
+            if "Date" in display_df.columns:
+                display_df["Date"] = pd.to_datetime(display_df["Date"], errors="coerce").dt.strftime("%b %d, %Y %H:%M")
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
+
     section_header(
         "Takeaways",
         "Three insights the audience should remember",
@@ -917,20 +982,6 @@ def main() -> None:
                 """,
                 unsafe_allow_html=True,
             )
-
-    history_df, history_error = load_supabase_history()
-    if history_df is not None or history_error:
-        section_header(
-            "History",
-            "Saved predictions from Supabase",
-            "This optional history view reads directly from Supabase so the dashboard can show saved runs without depending on API reads.",
-        )
-        if history_error:
-            st.info(history_error)
-        elif history_df is not None and history_df.empty:
-            st.info("Supabase is connected, but there are no saved predictions yet.")
-        elif history_df is not None:
-            st.dataframe(history_df, use_container_width=True, hide_index=True)
 
     st.markdown(
         """

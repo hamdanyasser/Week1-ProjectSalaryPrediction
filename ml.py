@@ -53,6 +53,67 @@ REMOTE_RATIO_LABELS = {
     50: "Hybrid",
     100: "Fully remote",
 }
+COUNTRY_NAMES: dict[str, str] = {
+    "AE": "United Arab Emirates",
+    "AR": "Argentina",
+    "AS": "American Samoa",
+    "AT": "Austria",
+    "AU": "Australia",
+    "BE": "Belgium",
+    "BG": "Bulgaria",
+    "BO": "Bolivia",
+    "BR": "Brazil",
+    "CA": "Canada",
+    "CH": "Switzerland",
+    "CL": "Chile",
+    "CN": "China",
+    "CO": "Colombia",
+    "CZ": "Czech Republic",
+    "DE": "Germany",
+    "DK": "Denmark",
+    "DZ": "Algeria",
+    "EE": "Estonia",
+    "ES": "Spain",
+    "FR": "France",
+    "GB": "United Kingdom",
+    "GR": "Greece",
+    "HK": "Hong Kong",
+    "HN": "Honduras",
+    "HR": "Croatia",
+    "HU": "Hungary",
+    "IE": "Ireland",
+    "IL": "Israel",
+    "IN": "India",
+    "IQ": "Iraq",
+    "IR": "Iran",
+    "IT": "Italy",
+    "JE": "Jersey",
+    "JP": "Japan",
+    "KE": "Kenya",
+    "LU": "Luxembourg",
+    "MD": "Moldova",
+    "MT": "Malta",
+    "MX": "Mexico",
+    "MY": "Malaysia",
+    "NG": "Nigeria",
+    "NL": "Netherlands",
+    "NZ": "New Zealand",
+    "PH": "Philippines",
+    "PK": "Pakistan",
+    "PL": "Poland",
+    "PR": "Puerto Rico",
+    "PT": "Portugal",
+    "RO": "Romania",
+    "RS": "Serbia",
+    "RU": "Russia",
+    "SG": "Singapore",
+    "SI": "Slovenia",
+    "TN": "Tunisia",
+    "TR": "Turkey",
+    "UA": "Ukraine",
+    "US": "United States",
+    "VN": "Vietnam",
+}
 
 
 def load_raw_data(dataset_path: Path) -> pd.DataFrame:
@@ -225,4 +286,8 @@ def humanize_company_size(code: str) -> str:
 
 def humanize_remote_ratio(value: int) -> str:
     return REMOTE_RATIO_LABELS.get(value, f"{value}% remote")
+
+
+def humanize_country_code(code: str) -> str:
+    return COUNTRY_NAMES.get(code, code)
 
