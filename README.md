@@ -39,7 +39,7 @@ train_model.py  -->  FastAPI (localhost:8000)  -->  Streamlit (localhost:8501)
 ### Deployed flow
 
 ```
-Render (FastAPI)  <--  Streamlit Community Cloud (dashboard)
+Railway (FastAPI)  <--  Streamlit Community Cloud (dashboard)
       |
       v
   Supabase (prediction history)
@@ -214,16 +214,22 @@ If Supabase env vars are not set, both paths are silently skipped and the app wo
 
 ## Deployment
 
-### FastAPI on Render
+### FastAPI on Railway
 
-- `render.yaml` configures the web service.
-- The model artifact (`artifacts/decision_tree_pipeline.joblib`) and dataset must be present at deploy time (committed to the repo or generated during build).
-- Set Supabase env vars in Render's environment settings if you want persistence.
+- `Procfile` configures the start command.
+- The model artifact (`artifacts/decision_tree_pipeline.joblib`) and dataset are committed to the repo so they're available at deploy time.
+- Set these environment variables in Railway's dashboard:
+
+| Variable | Value |
+|----------|-------|
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Your service role key |
+| `SUPABASE_PREDICTIONS_TABLE` | `salary_predictions` |
 
 ### Streamlit on Community Cloud
 
 - Point to `dashboard.py` as the main file.
-- Set `FASTAPI_BASE_URL` in Streamlit secrets to the deployed Render URL.
+- Set `FASTAPI_BASE_URL` in Streamlit secrets to the deployed Railway URL.
 - Ollama will not be available in the cloud. The dashboard handles this gracefully — the AI Insight section shows an informational message instead.
 - Set Supabase env vars in Streamlit secrets if you want the history section.
 
@@ -241,7 +247,8 @@ If Supabase env vars are not set, both paths are silently skipped and the app wo
 | `predict_client.py` | Standalone API client with error handling |
 | `train_model.py` | Entry script to train and save artifacts |
 | `supabase_schema.sql` | SQL to create the predictions table in Supabase |
-| `render.yaml` | Render deployment config for the API |
+| `Procfile` | Railway deployment start command |
+| `render.yaml` | Render deployment config (alternative) |
 | `.streamlit/config.toml` | Dark theme configuration |
 | `requirements.txt` | Python dependencies |
 
