@@ -272,6 +272,49 @@ def predict_salary(model_bundle: dict[str, Any], payload: dict[str, Any]) -> flo
     return round(float(predicted_value), 2)
 
 
+def get_feature_importances(model_bundle: dict[str, Any]) -> list[dict[str, Any]]:
+    """Aggregate one-hot importances back to original input features."""
+    pipeline = model_bundle["pipeline"]
+    regressor = pipeline.named_steps["regressor"]
+    preprocessor = pipeline.named_steps["preprocessor"]
+
+    ohe = preprocessor.named_transformers_["categorical"]
+    encoded_names = list(ohe.get_feature_names_out(CATEGORICAL_FEATURES))
+    all_feature_names = encoded_names + NUMERIC_FEATURES
+    importances = regressor.feature_importances_
+
+    totals = {column: 0.0 for column in FEATURE_COLUMNS}
+    for name, value in zip(all_feature_names, importances):
+        matched = False
+        for original in CATEGORICAL_FEATURES:
+            if name.startswith(f"{original}_"):
+                totals[original] += float(value)
+                matched = True
+                break
+        if not matched and name in NUMERIC_FEATURES:
+            totals[name] += float(value)
+
+    pretty_labels = {
+        "job_title": "Job title",
+        "experience_level": "Experience level",
+        "employment_type": "Employment type",
+        "employee_residence": "Employee country",
+        "company_location": "Company country",
+        "company_size": "Company size",
+        "remote_ratio": "Remote ratio",
+    }
+    ranked = sorted(totals.items(), key=lambda item: item[1], reverse=True)
+    return [
+        {
+            "feature": feature,
+            "label": pretty_labels.get(feature, feature),
+            "importance": round(value, 4),
+            "pct": round(value * 100, 1),
+        }
+        for feature, value in ranked
+    ]
+
+
 def humanize_experience_level(code: str) -> str:
     return EXPERIENCE_LABELS.get(code, code)
 

@@ -24,6 +24,7 @@ from analysis import (
 from config import get_settings
 from ml import (
     TARGET_COLUMN,
+    get_feature_importances,
     humanize_company_size,
     humanize_country_code,
     humanize_employment_type,
@@ -998,7 +999,63 @@ def main() -> None:
     else:
         st.info("Run a prediction first, then this section will explain the result.")
 
-    # ── 11. History ──────────────────────────────────────────────────────
+    # ── 11. Feature Influence ────────────────────────────────────────────
+    if pred:
+        section_header("Feature Influence", "sky",
+                       "What actually moves the salary?",
+                       "Global importance of each input inside the Decision Tree. "
+                       "Bigger bars = the model leans on this feature more.")
+        bundle = get_local_model_bundle()
+        if bundle is not None:
+            importances = get_feature_importances(bundle)
+            user_inputs = {
+                "job_title": job_title,
+                "experience_level": humanize_experience_level(experience_level),
+                "employment_type": humanize_employment_type(employment_type),
+                "employee_residence": humanize_country_code(employee_residence),
+                "company_location": humanize_country_code(company_location),
+                "company_size": humanize_company_size(company_size),
+                "remote_ratio": humanize_remote_ratio(remote_ratio),
+            }
+            chart_open("Model feature importance",
+                       "Aggregated from the trained Decision Tree. Values shown per feature you picked.")
+            imp_labels = [row["label"] for row in importances]
+            imp_values = [row["pct"] for row in importances]
+            imp_hover = [
+                f"<b>{row['label']}</b><br>Your value: {user_inputs.get(row['feature'], '—')}"
+                f"<br>Model weight: {row['pct']}%"
+                for row in importances
+            ]
+            imp_colors = [TEAL, SKY, VIOLET, AMBER, CORAL, LIME, PINK][: len(importances)]
+            imp_fig = go.Figure(
+                go.Bar(
+                    x=imp_values,
+                    y=imp_labels,
+                    orientation="h",
+                    marker_color=imp_colors,
+                    text=[f"{v}%" for v in imp_values],
+                    textposition="auto",
+                    textfont=dict(color="#FFFFFF", size=13, family="Inter"),
+                    hovertext=imp_hover,
+                    hoverinfo="text",
+                )
+            )
+            imp_fig.update_layout(
+                xaxis_title="Share of model importance (%)",
+                yaxis_title="",
+                height=320,
+                yaxis=dict(autorange="reversed"),
+            )
+            st.plotly_chart(apply_chart_style(imp_fig), use_container_width=True,
+                            config={"displayModeBar": False})
+            top = importances[0]
+            chart_note(
+                f"{top['label']} alone explains {top['pct']}% of the model — "
+                f"this is why the estimate changes so much when you switch country or seniority."
+            )
+            chart_close()
+
+    # ── 12. History ──────────────────────────────────────────────────────
     history_df, history_error = load_supabase_history()
     if history_df is not None or history_error:
         section_header("History", "violet", "Saved predictions from Supabase",

@@ -1,6 +1,8 @@
 """PayScope — 7-slide tight, vibrant, animated, chart-rich deck."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from lxml import etree
 
 from pptx import Presentation
@@ -255,6 +257,22 @@ def slide_title(prs):
     set_bg(slide)
     deco_hero(slide)
 
+    # QR card — top right corner
+    qr_card = rect(slide, Inches(10.6), Inches(0.5), Inches(2.3), Inches(2.9),
+                   SURFACE, 0.08)
+    anim(slide, qr_card, 1500, 500, "zoom")
+    hard_rect(slide, Inches(10.6), Inches(0.5), Inches(2.3), Inches(0.12), TEAL)
+    txt(slide, Inches(10.7), Inches(0.7), Inches(2.1), Inches(0.3),
+        "SCAN  •  TRY IT LIVE", 10, TEAL, True, PP_ALIGN.CENTER)
+    qr_path = "artifacts/streamlit_qr.png"
+    if Path(qr_path).exists():
+        slide.shapes.add_picture(qr_path, Inches(10.85), Inches(1.05),
+                                 width=Inches(1.8), height=Inches(1.8))
+    txt(slide, Inches(10.7), Inches(2.95), Inches(2.1), Inches(0.3),
+        "projectsalaryprediction", 8, MUTED, False, PP_ALIGN.CENTER)
+    txt(slide, Inches(10.7), Inches(3.15), Inches(2.1), Inches(0.3),
+        ".streamlit.app", 8, MUTED, False, PP_ALIGN.CENTER)
+
     # colourful accent bars on top left
     accent_lines(slide, Inches(1.2), Inches(2.1),
                  [TEAL, CORAL, AMBER, VIOLET, SKY])
@@ -265,17 +283,17 @@ def slide_title(prs):
     anim(slide, tag, 0, 500)
 
     # massive title
-    title = txt(slide, Inches(1.2), Inches(2.85), Inches(11), Inches(1.4),
+    title = txt(slide, Inches(1.2), Inches(2.85), Inches(9.3), Inches(1.4),
                 "Predict. Explain. Compare.", 54, WHITE, True)
     anim(slide, title, 300, 700)
 
     # teal highlight subtitle
-    sub1 = txt(slide, Inches(1.2), Inches(4.15), Inches(11), Inches(0.6),
+    sub1 = txt(slide, Inches(1.2), Inches(4.15), Inches(9.3), Inches(0.6),
                "A data-science salary intelligence platform.", 22, TEAL, False)
     anim(slide, sub1, 600, 500)
 
     # muted description
-    sub2 = txt(slide, Inches(1.2), Inches(4.75), Inches(11), Inches(0.5),
+    sub2 = txt(slide, Inches(1.2), Inches(4.75), Inches(9.3), Inches(0.5),
                "ML prediction  •  LLM-generated insight  •  Live analytics dashboard",
                15, MUTED)
     anim(slide, sub2, 900, 500)
