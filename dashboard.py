@@ -541,10 +541,15 @@ def inject_css() -> None:
     )
 
 
-@st.cache_data(show_spinner=False)
+_CACHED_DATA: tuple[pd.DataFrame, dict[str, Any]] | None = None
+
+
 def load_cached_data() -> tuple[pd.DataFrame, dict[str, Any]]:
-    settings = get_settings()
-    return load_dashboard_data(settings), load_metrics(settings.metrics_path)
+    global _CACHED_DATA
+    if _CACHED_DATA is None:
+        settings = get_settings()
+        _CACHED_DATA = (load_dashboard_data(settings), load_metrics(settings.metrics_path))
+    return _CACHED_DATA
 
 
 def initialize_session_state() -> None:
@@ -594,13 +599,20 @@ def chart_close() -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-@st.cache_resource(show_spinner=False)
+_CACHED_MODEL_BUNDLE: dict[str, Any] | None = None
+_CACHED_MODEL_BUNDLE_LOADED = False
+
+
 def get_local_model_bundle():
-    settings = get_settings()
-    try:
-        return load_model_bundle(settings.model_path)
-    except Exception:
-        return None
+    global _CACHED_MODEL_BUNDLE, _CACHED_MODEL_BUNDLE_LOADED
+    if not _CACHED_MODEL_BUNDLE_LOADED:
+        _CACHED_MODEL_BUNDLE_LOADED = True
+        settings = get_settings()
+        try:
+            _CACHED_MODEL_BUNDLE = load_model_bundle(settings.model_path)
+        except Exception:
+            _CACHED_MODEL_BUNDLE = None
+    return _CACHED_MODEL_BUNDLE
 
 
 def predict_locally(form_payload: dict[str, Any], df: pd.DataFrame) -> dict[str, Any] | None:
