@@ -9,6 +9,7 @@ import requests
 import streamlit as st
 
 from analysis import (
+    build_peer_context,
     build_takeaways,
     get_employment_salary_summary,
     get_experience_salary_summary,
@@ -29,6 +30,9 @@ from ml import (
     humanize_experience_level,
     humanize_remote_ratio,
     load_metrics,
+    load_model_bundle,
+    normalize_prediction_inputs,
+    predict_salary,
 )
 
 
@@ -590,7 +594,35 @@ def chart_close() -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-def call_prediction_api(form_payload: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
+@st.cache_resource(show_spinner=False)
+def get_local_model_bundle():
+    settings = get_settings()
+    try:
+        return load_model_bundle(settings.model_path)
+    except Exception:
+        return None
+
+
+def predict_locally(form_payload: dict[str, Any], df: pd.DataFrame) -> dict[str, Any] | None:
+    bundle = get_local_model_bundle()
+    if bundle is None:
+        return None
+    normalized = normalize_prediction_inputs(form_payload)
+    predicted = predict_salary(bundle, normalized)
+    peer = build_peer_context(df, normalized, predicted)
+    return {
+        "predicted_salary_usd": float(predicted),
+        "normalized_inputs": normalized,
+        "model_name": bundle.get("model_name", "decision_tree"),
+        "peer_context": peer,
+        "llm_analysis": None,
+    }
+
+
+def call_prediction_api(
+    form_payload: dict[str, Any],
+    df: pd.DataFrame,
+) -> tuple[dict[str, Any] | None, str | None]:
     settings = get_settings()
     try:
         response = requests.get(
@@ -600,10 +632,11 @@ def call_prediction_api(form_payload: dict[str, Any]) -> tuple[dict[str, Any] | 
         )
         response.raise_for_status()
         return response.json(), None
-    except requests.exceptions.ConnectionError:
-        return None, "The API is not reachable yet. Start FastAPI to enable live predictions."
-    except requests.exceptions.Timeout:
-        return None, "The API took too long to respond. Please try again."
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        fallback = predict_locally(form_payload, df)
+        if fallback is not None:
+            return fallback, None
+        return None, "The API is not reachable and the local model could not be loaded."
     except requests.exceptions.HTTPError as exc:
         detail = exc.response.text if exc.response is not None else str(exc)
         return None, f"Prediction request failed: {detail}"
@@ -877,7 +910,7 @@ def main() -> None:
             "company_size": company_size,
             "remote_ratio": remote_ratio,
         }
-        prediction_payload, error_message = call_prediction_api(payload)
+        prediction_payload, error_message = call_prediction_api(payload, df)
         if error_message:
             st.session_state["prediction_payload"] = None
             st.session_state["prediction_error"] = error_message
