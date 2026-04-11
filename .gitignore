@@ -6,5 +6,6 @@ __pycache__/
 .mypy_cache/
 .ipynb_checkpoints/
 artifacts/*.log
+data/processed/
 ~$*.pptx
 .DS_Store
