@@ -1,6 +1,6 @@
 # PayScope — Claude context
 
-Data-science salary prediction app for a Week 1 assignment. Written for non-technical audiences: warm, plain-English copy everywhere, no jargon like R², RMSE, "Decision Tree", "feature importance".
+Personal data-science salary prediction app. Written for non-technical audiences: warm, plain-English copy everywhere, no jargon like R², RMSE, "Decision Tree", "feature importance".
 
 ## Stack
 - **ml.py** — scikit-learn pipeline (Decision Tree regressor), cleans raw CSV, trains, saves joblib + metrics JSON.
